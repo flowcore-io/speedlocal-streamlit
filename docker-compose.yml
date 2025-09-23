@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  streamlit-app:
+    build:
+      context: ./streamlit-app
+      dockerfile: Dockerfile
+    ports:
+      - "8501:8501"
+    environment:
+      - STREAMLIT_SERVER_PORT=8501
+      - STREAMLIT_THEME_PRIMARY_COLOR=#1f77b4
+      - STREAMLIT_THEME_BACKGROUND_COLOR=#ffffff
+    volumes:
+      # Mount source code for development (comment out for production)
+      - ./streamlit-app:/app
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s

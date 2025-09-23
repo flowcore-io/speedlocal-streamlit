@@ -1,0 +1,26 @@
+# Production environment configuration for Speed Local Streamlit
+flowcore-microservices:
+  deployments:
+    speedlocalStreamlit:
+      enabled: true
+      deployment:
+        tag: "v1.0.0"  # Use specific version tags for production
+        replicas: 3
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "2"
+      env:
+        - name: STREAMLIT_SERVER_PORT
+          value: "8501"
+        - name: ENVIRONMENT
+          value: "production"
+        - name: STREAMLIT_THEME_PRIMARY_COLOR
+          value: "#1f77b4"
+      ingress:
+        route:
+          - hosts: ["speedlocal-streamlit.flowcore.app"]
+            tlsSecret: "flowcore-app-wildcard-tls"
