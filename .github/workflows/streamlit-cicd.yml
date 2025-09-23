@@ -8,7 +8,6 @@ on:
 env:
   AWS_REGION: eu-west-1
   AWS_ACCOUNT_ID: 305363105399
-  ECR_REGISTRY: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
   IMAGE_REPO: speedlocal/streamlit-app
   SERVICE_KEY: speedlocalStreamlit
   PROD_VALUES: helm-chart/environments/production.yaml
@@ -47,11 +46,13 @@ jobs:
 
       - name: Build image
         run: |
-          docker build -t $ECR_REGISTRY/$IMAGE_REPO:${{ steps.tag.outputs.tag }} streamlit-app
+          REGISTRY="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
+          docker build -t $REGISTRY/$IMAGE_REPO:${{ steps.tag.outputs.tag }} streamlit-app
 
       - name: Push image
         run: |
-          docker push $ECR_REGISTRY/$IMAGE_REPO:${{ steps.tag.outputs.tag }}
+          REGISTRY="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
+          docker push $REGISTRY/$IMAGE_REPO:${{ steps.tag.outputs.tag }}
 
       - name: Install yq
         run: |
