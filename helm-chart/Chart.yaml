@@ -1,0 +1,13 @@
+apiVersion: v2
+name: speedlocal-streamlit
+description: Helm umbrella chart for the Speed Local Streamlit app using flowcore-microservices as a dependency
+type: application
+# Chart version is managed by CI on tagged releases; dev pushes keep this as-is
+version: 0.1.0
+appVersion: "0.1.0"
+
+dependencies:
+  - name: flowcore-microservices
+    version: 2.8.6
+    repository: https://flowcore-io.github.io/flowcore-helm-charts/
+

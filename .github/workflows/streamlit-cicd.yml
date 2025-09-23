@@ -1,0 +1,75 @@
+name: Streamlit Build & Deploy (on Release)
+
+on:
+  release:
+    types: [ published ]
+  workflow_dispatch:
+
+env:
+  AWS_REGION: eu-west-1
+  AWS_ACCOUNT_ID: 305363105399
+  ECR_REGISTRY: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com
+  IMAGE_REPO: speedlocal/streamlit-app
+  SERVICE_KEY: speedlocalStreamlit
+  PROD_VALUES: helm-chart/environments/production.yaml
+
+jobs:
+  release-streamlit:
+    name: Build image and update production Helm values
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Ensure ECR repository exists
+        run: |
+          aws ecr describe-repositories --repository-names $IMAGE_REPO >/dev/null 2>&1 || \
+          aws ecr create-repository --repository-name $IMAGE_REPO
+
+      - name: Determine release version
+        id: tag
+        run: |
+          echo "tag=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
+        env:
+          GITHUB_REF_NAME: ${{ github.event.release.tag_name }}
+
+      - name: Build image
+        run: |
+          docker build -t $ECR_REGISTRY/$IMAGE_REPO:${{ steps.tag.outputs.tag }} streamlit-app
+
+      - name: Push image
+        run: |
+          docker push $ECR_REGISTRY/$IMAGE_REPO:${{ steps.tag.outputs.tag }}
+
+      - name: Install yq
+        run: |
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/v4.44.3/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+
+      - name: Update production Helm values with new tag
+        run: |
+          set -euo pipefail
+          yq -i \
+            '."flowcore-microservices".deployments."'"$SERVICE_KEY"'".deployment.tag = "'"${{ steps.tag.outputs.tag }}"'"' \
+            $PROD_VALUES
+          echo "Updated $PROD_VALUES to tag ${{ steps.tag.outputs.tag }}"
+
+      - name: Commit Helm change
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "fix(helm): :rocket: Update prod tag to ${{ steps.tag.outputs.tag }}"
+          file_pattern: ${{ env.PROD_VALUES }}
+
+

@@ -1,0 +1,27 @@
+name: Release Please
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'streamlit-app/**'
+      - 'package.json'
+      - '.github/workflows/release-please.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Release Please
+        uses: google-github-actions/release-please-action@v4
+        with:
+          token: ${{ secrets.FLOWCORE_MACHINE_GITHUB_TOKEN }}
+          release-type: simple
+          package-name: speedlocal-streamlit
+
