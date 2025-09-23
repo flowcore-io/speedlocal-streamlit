@@ -1,0 +1,7 @@
+{
+  "packages": {
+    "main": {
+      "release-type": "simple"
+    }
+  }
+}
