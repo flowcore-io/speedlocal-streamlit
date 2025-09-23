@@ -5,8 +5,8 @@ on:
     branches: [ main ]
     paths:
       - 'streamlit-app/**'
-      - '.github/release-please-config.json'
-      - '.github/.release-please-manifest.json'
+      - '.github/workflows/release-please-config.json'
+      - '.github/workflows/release-please-manifest.json'
       - '.github/workflows/release-please.yml'
 
 permissions:
