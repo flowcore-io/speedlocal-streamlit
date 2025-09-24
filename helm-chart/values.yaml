@@ -9,7 +9,7 @@ flowcore-microservices:
   webhookBaseURL: https://webhook.api.staging.flowcore.io
   oidcWellKnownUrl: https://auth.flowcore.io/realms/flowcore/.well-known/openid-configuration
   imagePullSecrets:
-    - ecr-creds
+    - regcred
   deployments:
     speedlocalStreamlit:
       enabled: false
