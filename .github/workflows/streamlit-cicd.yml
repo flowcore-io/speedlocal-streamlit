@@ -13,12 +13,16 @@ env:
   AWS_REGION: eu-west-1
   AWS_ACCOUNT_ID: 305363105399
   IMAGE_REPO: speedlocal/streamlit-app
-  SERVICE_KEY: speedlocalStreamlit
+  # Multi-app deployment keys
+  TIMES_APP_KEY: timesApp
+  FLOW_MAPS_APP_KEY: flowMapsApp
+  SANKEY_APP_KEY: sankeyApp
+  DATABASE_APP_KEY: databaseApp
   PROD_VALUES: helm-chart/configuration/production.yaml
 
 jobs:
   release-streamlit:
-    name: Build image and update production Helm values
+    name: Build image and update all app deployments
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -72,13 +76,35 @@ jobs:
           sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/v4.44.3/yq_linux_amd64
           sudo chmod +x /usr/local/bin/yq
 
-      - name: Update production Helm values with new tag
+      - name: Update production Helm values with new tag for all apps
         run: |
           set -euo pipefail
+          TAG="${{ steps.tag.outputs.tag }}"
+          
+          # Update all multi-app deployment tags
+          echo "Updating all app deployments to tag $TAG"
+          
           yq -i \
-            '."flowcore-microservices".deployments."'"$SERVICE_KEY"'".deployment.tag = "'"${{ steps.tag.outputs.tag }}"'"' \
+            '."flowcore-microservices".deployments."'"$TIMES_APP_KEY"'".deployment.tag = "'"$TAG"'"' \
             $PROD_VALUES
-          echo "Updated $PROD_VALUES to tag ${{ steps.tag.outputs.tag }}"
+          echo "Updated TIMES Explorer app to tag $TAG"
+          
+          yq -i \
+            '."flowcore-microservices".deployments."'"$FLOW_MAPS_APP_KEY"'".deployment.tag = "'"$TAG"'"' \
+            $PROD_VALUES
+          echo "Updated Energy Flow Maps app to tag $TAG"
+          
+          yq -i \
+            '."flowcore-microservices".deployments."'"$SANKEY_APP_KEY"'".deployment.tag = "'"$TAG"'"' \
+            $PROD_VALUES
+          echo "Updated Sankey Diagrams app to tag $TAG"
+          
+          yq -i \
+            '."flowcore-microservices".deployments."'"$DATABASE_APP_KEY"'".deployment.tag = "'"$TAG"'"' \
+            $PROD_VALUES
+          echo "Updated Database Tools app to tag $TAG"
+          
+          echo "Successfully updated all apps in $PROD_VALUES to tag $TAG"
 
       - name: Commit and push Helm change
         env:
@@ -94,7 +120,7 @@ jobs:
           fi
 
           git add "${PROD_VALUES}"
-          git commit -m "fix(helm): :rocket: Update prod tag to ${TAG}"
+          git commit -m "fix(helm): :rocket: Update all app tags to ${TAG}"
           git push origin HEAD:main
 
           echo "Committed and pushed ${PROD_VALUES} with tag ${TAG}."

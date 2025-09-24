@@ -1,6 +1,6 @@
 """
-TIMES Data Explorer - Advanced sector-based energy and emission analysis
-Enhanced version with Azure blob storage integration and comprehensive visualizations
+TIMES Data Explorer - Extracted functionality from original page
+Uses lazy imports to avoid pybind11 conflicts
 """
 
 import streamlit as st
@@ -11,16 +11,9 @@ from plotly.subplots import make_subplots
 import sys
 import os
 
-# Add utils directory to path for imports
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'utils'))
+# Add utils directory to path
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'app', 'utils'))
 from database import connect_to_db, get_unique_values, get_sector_descriptions, test_database_connection
-
-# Set page configuration
-st.set_page_config(page_title="TIMES Data Explorer", page_icon="📊", layout="wide")
-
-# Title
-st.title("📊 TIMES Data Explorer")
-st.markdown("**Advanced sector-based energy and emission analysis with scenario comparison capabilities**")
 
 # Define sectors to exclude
 EXCLUDED_SECTORS = ['DMZ', 'SYS', 'DHT', 'ELT', 'TRD']
@@ -229,7 +222,9 @@ def create_emission_plot(conn, sector, scenarios):
     except Exception as e:
         st.error(f"Error creating emission plot: {str(e)}")
 
-def main():
+def render_times_explorer():
+    """Main render function for TIMES Data Explorer"""
+    
     # Database connection section
     st.sidebar.header("🔗 Database Connection")
     
@@ -373,6 +368,3 @@ def main():
         - Responsive chart layouts and annotations
         - Export-ready visualizations
         """)
-
-if __name__ == "__main__":
-    main()

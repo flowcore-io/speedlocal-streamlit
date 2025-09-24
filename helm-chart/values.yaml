@@ -86,3 +86,16 @@ flowcore-secret-requester:
       source:
         name: regcred
         namespace: flowcore-core
+
+# Custom ingress for multi-app routing (disabled by default)
+# Enable this when deploying with multi-app.yaml configuration
+customIngress:
+  enabled: false
+  hosts:
+    - host: speedlocal-streamlit.customer.flowcore.io
+  tls:
+    - secretName: flowcore-io-customer-tls
+      hosts:
+        - speedlocal-streamlit.customer.flowcore.io
+  annotations: {}
+    # Additional custom annotations can be added here

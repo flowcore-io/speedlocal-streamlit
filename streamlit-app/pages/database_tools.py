@@ -1,6 +1,6 @@
 """
-Database Tools - Comprehensive database exploration and management utilities
-Provides SQL query interface, schema exploration, and data management tools
+Database Tools - Full functionality from original page
+Comprehensive database exploration and management utilities
 """
 
 import streamlit as st
@@ -13,12 +13,9 @@ import sys
 import os
 from datetime import datetime
 
-# Add utils directory to path for imports
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'utils'))
+# Add utils directory to path
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'app', 'utils'))
 from database import connect_to_db, get_unique_values, test_database_connection
-
-# Set page configuration
-st.set_page_config(page_title="Database Tools", page_icon="🛠️", layout="wide")
 
 @st.cache_data(show_spinner=False, ttl=3600)  # Cache for 1 hour
 def get_table_info(conn):
@@ -172,10 +169,8 @@ GROUP BY prc ORDER BY total_emissions DESC
         }
     }
 
-def main():
-    # Title and description
-    st.title("🛠️ Database Tools")
-    st.markdown("**Comprehensive database exploration, querying, and management utilities**")
+def render_database_tools():
+    """Main render function for Database Tools"""
     
     # Database connection section
     st.sidebar.header("🔗 Database Connection")
@@ -523,6 +518,3 @@ def main():
         - **Cache Management**: Local caching for cloud databases
         - **URL Validation**: Automatic URL expiry checking
         """)
-
-if __name__ == "__main__":
-    main()

@@ -1,6 +1,6 @@
 """
-Sankey Diagrams - Interactive energy flow visualization with Plotly Sankey charts
-Displays energy flows between processes, technologies, and regions
+Sankey Diagrams - Full functionality from original page
+Interactive energy flow visualization with Plotly Sankey charts
 """
 
 import streamlit as st
@@ -12,12 +12,9 @@ from plotly.subplots import make_subplots
 import sys
 import os
 
-# Add utils directory to path for imports
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'utils'))
+# Add utils directory to path
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'app', 'utils'))
 from database import connect_to_db, get_unique_values, test_database_connection
-
-# Set page configuration
-st.set_page_config(page_title="Sankey Diagrams", page_icon="📊", layout="wide")
 
 @st.cache_data(show_spinner=False)
 def load_sankey_data(conn, scenario, year, region=None):
@@ -296,10 +293,8 @@ def create_top_flows_chart(df, n_flows=10):
     fig.update_layout(height=400, yaxis={'categoryorder':'total ascending'})
     return fig
 
-def main():
-    # Title and description
-    st.title("📊 Sankey Diagrams")
-    st.markdown("**Interactive energy flow visualization with comprehensive flow analysis**")
+def render_sankey_diagrams():
+    """Main render function for Sankey Diagrams"""
     
     # Database connection section
     st.sidebar.header("🔗 Database Connection")
@@ -501,6 +496,3 @@ def main():
         - **Policy impact**: Assess effects of energy policy changes
         - **Investment planning**: Identify critical energy infrastructure needs
         """)
-
-if __name__ == "__main__":
-    main()

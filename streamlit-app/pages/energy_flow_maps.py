@@ -1,31 +1,25 @@
 """
-Energy Flow Maps - Interactive geospatial energy flow visualization
+Energy Flow Maps - Full functionality with lazy imports to avoid pybind11 conflicts
 Displays energy flows between regions using Folium maps with flow magnitude visualization
 """
 
 import streamlit as st
 import pandas as pd
 import numpy as np
-import folium
-from folium.plugins import AntPath
-from streamlit_folium import st_folium
 from collections import defaultdict
 import time
-from geopy.geocoders import Nominatim
 import sys
 import os
 
-# Add utils directory to path for imports
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'utils'))
+# Add utils directory to path
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'app', 'utils'))
 from database import connect_to_db, get_unique_values, test_database_connection
 from geo_settings import SPECIAL_REGIONS, MAP_CENTER, DEFAULT_ZOOM, MAP_TILE, MAX_LINE_WIDTH, MIN_LINE_WIDTH
 
-# Set page configuration
-st.set_page_config(page_title="Energy Flow Maps", page_icon="🌍", layout="wide")
-
-# Initialize geocoder
+# Initialize geocoder with lazy import
 @st.cache_resource
 def get_geolocator():
+    from geopy.geocoders import Nominatim
     return Nominatim(user_agent="speedlocal_energy_maps")
 
 @st.cache_data(show_spinner=False)
@@ -150,7 +144,10 @@ def build_region_coordinates(regions):
     return coordinates
 
 def create_flow_map(flow_data):
-    """Create Folium map with energy flows"""
+    """Create Folium map with energy flows - LAZY IMPORTS"""
+    # CRITICAL: Import folium and related packages only when this function is called
+    import folium
+    from folium.plugins import AntPath
     
     if flow_data.empty:
         st.warning("No flow data available for the selected criteria")
@@ -246,7 +243,7 @@ def create_flow_map(flow_data):
                 line_width = MAX_LINE_WIDTH
             
             # Add animated flow line
-            folium.plugins.AntPath(
+            AntPath(
                 locations=[start_coord, end_coord],
                 color=arrow_color,
                 weight=max(2, line_width),
@@ -294,10 +291,8 @@ def create_flow_map(flow_data):
     
     return m
 
-def main():
-    # Title and description
-    st.title("🌍 Energy Flow Maps")
-    st.markdown("**Interactive geospatial visualization of energy flows between regions**")
+def render_flow_maps():
+    """Main render function for Energy Flow Maps"""
     
     # Database connection section
     st.sidebar.header("🔗 Database Connection")
@@ -379,6 +374,9 @@ def main():
                 flow_map = create_flow_map(st.session_state.flow_data)
                 
                 if flow_map:
+                    # CRITICAL: Lazy import for streamlit_folium only when displaying
+                    from streamlit_folium import st_folium
+                    
                     # Display the map
                     map_data = st_folium(flow_map, width=1200, height=600)
                     
@@ -438,6 +436,3 @@ def main():
         - **Fuel type filtering**: Focus on specific energy commodities
         - **Dynamic updates**: Real-time map regeneration
         """)
-
-if __name__ == "__main__":
-    main()

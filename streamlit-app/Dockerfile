@@ -21,4 +21,8 @@ USER appuser
 
 
 EXPOSE 8501
-CMD ["streamlit", "run", "app/main.py", "--server.port=8501", "--server.address=0.0.0.0"]
+
+# Support variable start commands via environment or arguments
+# Default to main app, but allow override for specific tools
+ENTRYPOINT ["streamlit", "run"]
+CMD ["main.py", "--server.port=8501", "--server.address=0.0.0.0"]
