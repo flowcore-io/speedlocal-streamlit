@@ -60,7 +60,7 @@ flowcore-microservices:
         enabled: true
         annotations:
           # NGINX Inc controller annotations for Streamlit WebSocket support
-          nginx.org/proxy-buffering: "off"
+          nginx.org/proxy-buffering: "false"
           nginx.org/proxy-read-timeout: "3600s"
           nginx.org/proxy-send-timeout: "3600s"
           nginx.org/proxy-connect-timeout: "60s"
