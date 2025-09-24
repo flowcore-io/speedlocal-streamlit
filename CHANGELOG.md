@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/flowcore-io/speedlocal-streamlit/compare/v0.2.1...v0.2.2) (2025-09-24)
+
+
+### Bug Fixes
+
+* **workflows:** :art: Update production values path in streamlit-cicd workflow ([7572262](https://github.com/flowcore-io/speedlocal-streamlit/commit/757226229fe5061ba104b3f6fe38e2837a45975c))
+
 ## [0.2.1](https://github.com/flowcore-io/speedlocal-streamlit/compare/v0.2.0...v0.2.1) (2025-09-24)
 
 
