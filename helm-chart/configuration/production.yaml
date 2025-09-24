@@ -17,3 +17,11 @@ flowcore-microservices:
       env:
         ENVIRONMENT:
           value: production
+
+flowcore-secret-requester:
+  enabled: true
+  requests:
+    customerWildcard:
+      enabled: true
+    streamlitRegcred:
+      enabled: true

@@ -72,3 +72,17 @@ flowcore-microservices:
           - hosts:
               - speedlocal-streamlit.customer.flowcore.app
             tlsSecret: flowcore-app-wildcard-tls
+
+flowcore-secret-requester:
+  enabled: false
+  requests:
+    customerWildcard:
+      enabled: false
+      source:
+        name: flowcore-io-customer-tls
+        namespace: certificates
+    streamlitRegcred:
+      enabled: false
+      source:
+        name: regcred
+        namespace: flowcore-core
