@@ -15,7 +15,7 @@ flowcore-microservices:
       enabled: false
       component: ui
       deployment:
-        image: streamlit-app
+        image: speedlocal/streamlit-app
         tag: latest
         replicas: 2
         resources:
