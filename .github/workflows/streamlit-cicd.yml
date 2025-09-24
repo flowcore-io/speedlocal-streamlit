@@ -14,7 +14,7 @@ env:
   AWS_ACCOUNT_ID: 305363105399
   IMAGE_REPO: speedlocal/streamlit-app
   SERVICE_KEY: speedlocalStreamlit
-  PROD_VALUES: helm-chart/environments/production.yaml
+  PROD_VALUES: helm-chart/configuration/production.yaml
 
 jobs:
   release-streamlit:
