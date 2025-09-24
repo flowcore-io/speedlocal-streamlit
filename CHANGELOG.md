@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.2.1](https://github.com/flowcore-io/speedlocal-streamlit/compare/v0.2.0...v0.2.1) (2025-09-24)
+
+
+### Bug Fixes
+
+* **docker:** :art: Force re-deploy ([d3c7c83](https://github.com/flowcore-io/speedlocal-streamlit/commit/d3c7c831a5bb052c8d51b57602cdb91a03e1aaef))
+* **helm:** :art: Correct indentation in values.yaml for route configuration ([5edee13](https://github.com/flowcore-io/speedlocal-streamlit/commit/5edee136c2b53ff1422d66aed4c8b04dab3741c9))
+* **helm:** :rocket: Update prod tag to v0.2.0 ([cff5707](https://github.com/flowcore-io/speedlocal-streamlit/commit/cff5707c3036117f5225edb0106301e2e32a8e2f))
+* move production.yaml to configuration/ directory for ArgoCD compatibility ([d0ede9c](https://github.com/flowcore-io/speedlocal-streamlit/commit/d0ede9c010c1948417084af85ee531470b1aaba7))
+* **workflows:** :sparkles: Add input for manual tag in streamlit-cicd workflow ([360aed5](https://github.com/flowcore-io/speedlocal-streamlit/commit/360aed5ca199a04e53ac25f2bcaaa54f13db1f5d))
+
 ## [0.2.0](https://github.com/flowcore-io/speedlocal-streamlit/compare/v0.1.0...v0.2.0) (2025-09-23)
 
 
