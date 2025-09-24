@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.0](https://github.com/flowcore-io/speedlocal-streamlit/compare/v0.2.3...v0.3.0) (2025-09-24)
+
+
+### Features
+
+* add comprehensive multi-page analytics with TIMES data explorer, energy flow maps, Sankey diagrams, and database tools ([418ab5c](https://github.com/flowcore-io/speedlocal-streamlit/commit/418ab5cd86e1a272e7b8f57a83f8031f3210d155))
+
+
+### Bug Fixes
+
+* **helm:** :rocket: Update prod tag to v0.2.3 ([3500c5e](https://github.com/flowcore-io/speedlocal-streamlit/commit/3500c5ea647d45a0db5f845d77956f2485f5438d))
+
 ## [0.2.3](https://github.com/flowcore-io/speedlocal-streamlit/compare/v0.2.2...v0.2.3) (2025-09-24)
 
 
