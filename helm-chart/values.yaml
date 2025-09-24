@@ -66,8 +66,8 @@ flowcore-microservices:
           nginx.org/proxy-connect-timeout: "60s"
           nginx.org/client-max-body-size: "50m"
           # WebSocket and sticky sessions for Streamlit
-          nginx.org/websocket-services: "speedlocalstreamlit-svc"
-          nginx.org/sticky-cookie-services: "speedlocalstreamlit-svc route expires=1h path=/"
+          nginx.org/websocket-services: "speedlocal-streamlit"
+          nginx.org/sticky-cookie-services: "speedlocal-streamlit route expires=1h path=/"
         route:
           - hosts:
               - speedlocal-streamlit.customer.flowcore.io
