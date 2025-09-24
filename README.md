@@ -18,8 +18,7 @@ speedlocal-streamlit/
 │   └── Dockerfile          # Container image definition
 ├── helm-chart/             # Kubernetes deployment manifests
 │   ├── values.yaml         # Base Helm values
-│   └── environments/       # Environment-specific configs
-│       ├── development.yaml
+│   └── configuration/      # Environment-specific configs (ArgoCD compatible)
 │       └── production.yaml
 └── README.md               # This file
 ```
