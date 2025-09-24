@@ -70,8 +70,8 @@ flowcore-microservices:
           nginx.org/sticky-cookie-services: "speedlocalstreamlit-svc route expires=1h path=/"
         route:
           - hosts:
-              - speedlocal-streamlit.customer.flowcore.app
-            tlsSecret: flowcore-app-wildcard-tls
+              - speedlocal-streamlit.customer.flowcore.io
+            tlsSecret: flowcore-io-customer-tls
 
 flowcore-secret-requester:
   enabled: false
