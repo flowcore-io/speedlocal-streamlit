@@ -1,0 +1,9 @@
+dependencies:
+- name: flowcore-microservices
+  repository: https://flowcore-io.github.io/flowcore-helm-charts/
+  version: 2.8.6
+- name: flowcore-secret-requester
+  repository: https://flowcore-io.github.io/flowcore-helm-charts
+  version: 1.1.1
+digest: sha256:e4aa1325fa5405cf9bf3fc60233638c2a8c7d6fc8303c3d5db9e5c04a4255600
+generated: "2025-09-24T17:10:08.507263+01:00"
