@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.4.0](https://github.com/flowcore-io/speedlocal-streamlit/compare/v0.3.0...v0.4.0) (2025-09-24)
+
+
+### Features
+
+* **docs:** :sparkles: Add comprehensive multi-app deployment and CI/CD validation documentation ([1cd1224](https://github.com/flowcore-io/speedlocal-streamlit/commit/1cd12249a95e1fef58331782fbd5f4843fa64fe6))
+
+
+### Bug Fixes
+
+* **helm:** :rocket: Update prod tag to v0.3.0 ([945d240](https://github.com/flowcore-io/speedlocal-streamlit/commit/945d24097672a138b6640c025f100380eb84aa48))
+* pin exact package versions to resolve pybind11 conflicts in multi-page app ([e438948](https://github.com/flowcore-io/speedlocal-streamlit/commit/e438948c2cd6ee95ff90719fc9d5c69ffaee7c01))
+
 ## [0.3.0](https://github.com/flowcore-io/speedlocal-streamlit/compare/v0.2.3...v0.3.0) (2025-09-24)
 
 
