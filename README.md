@@ -1,26 +1,64 @@
-# Speed Local Streamlit Dashboard
+# Speed Local Streamlit Analytics
 
-🚀 **Scientific data visualization and analysis dashboard for the Speed Local project**
+🚀 **A comprehensive multi-page Streamlit application for analyzing TIMES energy system data with advanced visualization capabilities including geospatial mapping, Sankey diagrams, and interactive database tools.**
 
-This repository contains a Streamlit dashboard for visualizing and analyzing scientific datasets from the Speed Local project, which focuses on Nordic green transition research through trans-Nordic collaboration.
+This repository contains a sophisticated analytics dashboard for visualizing and analyzing energy system data from the Speed Local project, which focuses on Nordic green transition research through trans-Nordic collaboration.
+
+## 🌟 Features
+
+### 📊 TIMES Data Explorer
+- **Interactive scenario analysis** with sector-based energy and emissions visualization
+- **Dynamic filtering** by scenario, year, and sector
+- **Comparative analysis** between different energy scenarios
+- **Stacked bar charts** for energy inputs by sector
+- **Line charts** for emissions trends over time
+
+### 🌍 Energy Flow Maps  
+- **Interactive geospatial visualization** of energy flows between regions
+- **Folium-based maps** with zoom, pan, and interactive features
+- **Automated geocoding** for region coordinates
+- **Flow magnitude visualization** with proportional line thickness
+- **Color-coded flows**: Blue (exports), Red (imports), Green (bidirectional)
+- **Animated pathways** showing energy flow directions
+
+### 📊 Sankey Diagrams
+- **Comprehensive energy flow analysis** with Plotly Sankey charts
+- **Multi-type flow visualization**: Production, Consumption, Transmission, Import/Export
+- **Node categorization** with color-coding for technologies, demands, and regions
+- **Interactive filtering** with flow threshold controls
+- **Statistical analysis** with flow breakdowns and top flows ranking
+
+### 🛠️ Database Tools
+- **Schema Explorer**: Browse database structure with table and column information
+- **SQL Query Interface**: Execute custom queries with safety controls and templates
+- **Automated Data Analysis**: Quick metrics and statistical summaries
+- **Quick Chart Generator**: Build custom visualizations from SQL results
+- **Data Export**: Download query results and analysis data
 
 ## 📁 Repository Structure
 
 ```
 speedlocal-streamlit/
-├── streamlit-app/          # Streamlit application code
+├── streamlit-app/                        # Streamlit application code
 │   ├── app/
-│   │   ├── main.py         # Main dashboard application
-│   │   └── pages/          # Additional pages (future)
-│   ├── assets/             # Static assets
-│   ├── tests/              # Application tests
-│   ├── requirements.txt    # Python dependencies
-│   └── Dockerfile          # Container image definition
-├── helm-chart/             # Kubernetes deployment manifests
-│   ├── values.yaml         # Base Helm values
-│   └── configuration/      # Environment-specific configs (ArgoCD compatible)
+│   │   ├── main.py                       # Main dashboard and landing page
+│   │   ├── pages/
+│   │   │   ├── 1_📊_TIMES_Data_Explorer.py   # Advanced TIMES data analysis
+│   │   │   ├── 2_🌍_Energy_Flow_Maps.py      # Geospatial energy flow visualization  
+│   │   │   ├── 3_📊_Sankey_Diagrams.py       # Energy flow Sankey charts
+│   │   │   └── 4_🛠️_Database_Tools.py        # Database management utilities
+│   │   └── utils/
+│   │       ├── database.py               # Database connection and utilities
+│   │       └── geo_settings.py           # Geographic constants and settings
+│   ├── assets/                           # Static assets
+│   ├── tests/                            # Application tests
+│   ├── requirements.txt                  # Python dependencies
+│   └── Dockerfile                        # Container image definition
+├── helm-chart/                           # Kubernetes deployment manifests
+│   ├── values.yaml                       # Base Helm values
+│   └── configuration/                    # Environment-specific configs (ArgoCD compatible)
 │       └── production.yaml
-└── README.md               # This file
+└── README.md                             # This file
 ```
 
 ## 🎯 Project Overview
@@ -31,7 +69,11 @@ The Speed Local project provides a platform where scientists can:
 - Create shareable DuckDB files by combining datasets
 - Collaborate on Nordic green transition research
 
-This Streamlit dashboard provides visualization and analysis capabilities for the data managed through the Speed Local Admin platform.
+This multi-page Streamlit application provides comprehensive visualization and analysis capabilities for TIMES energy system data, including:
+- **Advanced data exploration** with interactive filtering and comparative analysis
+- **Geospatial visualization** of energy flows between regions
+- **Sankey diagrams** for comprehensive energy flow analysis
+- **Database management tools** for direct data access and custom queries
 
 ## 🚀 Quick Start
 
@@ -115,20 +157,91 @@ The Helm configuration in `helm-chart/` is designed to be used with the `public-
 
 ### Features
 
-- **Dashboard Overview**: Key metrics and usage statistics
-- **Data Visualization**: Charts and graphs for dataset analysis
-- **Quick Actions**: Integration points with Speed Local Admin
-- **Activity Feed**: Recent activity and updates
+- **Multi-page Application**: Four specialized analysis pages for different use cases
+- **Advanced Data Visualization**: Interactive charts, maps, and Sankey diagrams
+- **Database Management**: Complete database exploration and query capabilities
+- **Geospatial Analysis**: Interactive maps with energy flow visualization
+- **Export Capabilities**: Download data and visualizations for further analysis
 - **Responsive Design**: Works on desktop and mobile devices
+- **Real-time Analysis**: Dynamic filtering and comparative scenario analysis
 
 ### Technology Stack
 
 - **Frontend**: Streamlit 1.32+
 - **Data Processing**: Pandas, NumPy
-- **Visualization**: Plotly (ready for integration)
+- **Visualization**: Plotly, Folium for interactive charts and maps
+- **Database**: DuckDB for efficient analytical queries
+- **Geospatial**: GeoPy for geocoding and coordinate management
 - **Container**: Python 3.11 slim Docker image
 - **Deployment**: Kubernetes with NGINX Ingress
 - **Infrastructure**: Flowcore Kubernetes platform
+
+## 💾 Database Connection
+
+The application supports two database connection methods:
+
+### Local DuckDB Files
+- Place your `.duckdb` file in an accessible location
+- Use the "Local File" connection option
+- Enter the full path to your database file
+
+### Azure Blob Storage
+- Generate a SAS URL for your DuckDB file in Azure Storage
+- Use the "Azure URL" connection option
+- Enable local caching for improved performance
+- URLs are automatically validated for expiry
+
+## 📋 Data Requirements
+
+The application expects a DuckDB database with a `timesreport_facts` table containing:
+
+### Required Columns:
+- `scen`: Scenario identifier
+- `year`: Year of the data point
+- `reg`: Region identifier  
+- `prc`: Process/technology identifier
+- `com`: Commodity/fuel type
+- `attr`: Attribute type (f_in, f_out, etc.)
+- `topic`: Data topic (energy, emissions, etc.)
+- `value`: Numerical value
+- `regfrom`, `regto`: For transmission flows
+
+### Data Types Supported:
+- **Energy flows**: Production, consumption, imports, exports, transmission
+- **Emissions data**: By sector and technology
+- **Regional data**: Multi-region energy systems
+- **Temporal data**: Multi-year scenario analysis
+
+## 🎛️ Usage Guide
+
+### 1. Connect to Database
+- Use the sidebar connection panel on any page
+- Select connection type (Local File or Azure URL)
+- Test connection to verify data access
+
+### 2. TIMES Data Explorer
+- Select scenario, year, and sector filters
+- Generate energy input visualizations by sector
+- Compare emissions trends across scenarios
+- Export data for further analysis
+
+### 3. Energy Flow Maps  
+- Configure scenario, year, and fuel filters
+- Generate interactive maps showing regional energy flows
+- Explore flow statistics and regional connections
+- Use geographic markers and flow animations
+
+### 4. Sankey Diagrams
+- Set scenario, year, and optional region filters
+- Adjust flow threshold to focus on major pathways
+- Analyze flow types and energy transformation chains
+- Export flow summaries and detailed data
+
+### 5. Database Tools
+- **Schema Explorer**: Navigate database structure
+- **SQL Query**: Execute custom analysis queries
+- **Data Analysis**: Get automated insights
+- **Quick Charts**: Build custom visualizations
 
 ### Health Checks
 

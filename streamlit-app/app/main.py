@@ -3,21 +3,42 @@ import pandas as pd
 from datetime import datetime
 
 st.set_page_config(
-    page_title="Speed Local Analytics",
+    page_title="Speed Local Analytics Hub",
     page_icon="🚀",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
 # Header
-st.title("🚀 Speed Local Analytics Dashboard")
-st.markdown("**Scientific data visualization and analysis for Nordic green transition research**")
+st.title("🚀 Speed Local Analytics Hub")
+st.markdown("**Comprehensive scientific data visualization and analysis platform for Nordic green transition research**")
+
+# Add navigation info
+st.info("🧠 **Multi-Page Application**: Use the sidebar navigation to explore different analysis tools and visualizations.")
 
 # Sidebar
 with st.sidebar:
-    st.header("Navigation")
+    st.header("🏠 Analytics Hub")
     st.markdown("---")
-    st.info("📊 **Speed Local Project**\n\nA platform for scientists to share and analyze GAMS reports and scientific datasets for Nordic green transition research.")
+    
+    st.markdown("""
+    ## 📁 Available Analysis Tools
+    
+    📈 **TIMES Data Explorer**  
+    Advanced sector-based energy and emission analysis
+    
+    🌍 **Energy Flow Maps**  
+    Interactive geospatial energy flow visualization
+    
+    📈 **Sankey Diagrams**  
+    Comprehensive energy system flow diagrams
+    
+    ⚙️ **Database Tools**  
+    Database connection and management utilities
+    """)
+    
+    st.markdown("---")
+    st.info("📁 **Speed Local Project**\n\nA platform for scientists to share and analyze GAMS reports and scientific datasets for Nordic green transition research.")
 
 # Main content area
 col1, col2 = st.columns([2, 1])
