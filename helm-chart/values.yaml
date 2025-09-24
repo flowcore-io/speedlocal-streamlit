@@ -3,13 +3,20 @@
 # using the flowcore-microservices Helm chart
 
 flowcore-microservices:
+  environment: flowcore
+  platform: customer
+  imageRepository: 305363105399.dkr.ecr.eu-west-1.amazonaws.com
+  webhookBaseURL: https://webhook.api.staging.flowcore.io
+  oidcWellKnownUrl: https://auth.flowcore.io/realms/flowcore/.well-known/openid-configuration
+  imagePullSecrets:
+    - ecr-creds
   deployments:
     speedlocalStreamlit:
-      enabled: false  # Enable in environment-specific overlays
+      enabled: false
       component: ui
       deployment:
-        image: 305363105399.dkr.ecr.eu-west-1.amazonaws.com/speedlocal/streamlit-app
-        tag: latest  # Override in environment-specific configs
+        image: streamlit-app
+        tag: latest
         replicas: 2
         resources:
           requests: 
@@ -28,29 +35,29 @@ flowcore-microservices:
           containerPort: 8501
       probes:
         readiness:
-          path: /_stcore/health
-          port: 8501
+          httpGet:
+            path: /_stcore/health
+            port: 8501
           initialDelaySeconds: 30
           periodSeconds: 10
         liveness:
-          path: /_stcore/health
-          port: 8501
+          httpGet:
+            path: /_stcore/health
+            port: 8501
           initialDelaySeconds: 60
           periodSeconds: 30
       env:
-        - name: STREAMLIT_SERVER_PORT
+        STREAMLIT_SERVER_PORT:
           value: "8501"
-        - name: STREAMLIT_THEME_PRIMARY_COLOR
+        STREAMLIT_THEME_PRIMARY_COLOR:
           value: "#1f77b4"
-        - name: STREAMLIT_THEME_BACKGROUND_COLOR
+        STREAMLIT_THEME_BACKGROUND_COLOR:
           value: "#ffffff"
       service:
         enabled: true
-        port: 80
-        targetPort: 8501
+        httpPort: 8501
       ingress:
         enabled: true
-        className: nginx
         annotations:
           # NGINX Inc controller annotations for Streamlit WebSocket support
           nginx.org/proxy-buffering: "off"
@@ -62,5 +69,6 @@ flowcore-microservices:
           nginx.org/websocket-services: "speedlocalstreamlit-svc"
           nginx.org/sticky-cookie-services: "speedlocalstreamlit-svc route expires=1h path=/"
         route:
-          - hosts: ["speedlocal-streamlit.customer.flowcore.app"]  # Update hostname as needed
-            tlsSecret: "flowcore-app-wildcard-tls"
+          hosts:
+            - speedlocal-streamlit.customer.flowcore.app
+          tlsSecret: flowcore-app-wildcard-tls

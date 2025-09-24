@@ -1,0 +1,19 @@
+# Production environment configuration for Speed Local Streamlit
+flowcore-microservices:
+  webhookBaseURL: https://webhook.api.flowcore.io
+  deployments:
+    speedlocalStreamlit:
+      enabled: true
+      deployment:
+        tag: v0.2.0
+        replicas: 3
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "2"
+      env:
+        ENVIRONMENT:
+          value: production
