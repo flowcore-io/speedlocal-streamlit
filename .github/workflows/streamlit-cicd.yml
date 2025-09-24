@@ -4,6 +4,10 @@ on:
   release:
     types: [ published ]
   workflow_dispatch:
+    inputs:
+      tag:
+        description: "Image/helm tag to use (e.g. v1.2.3)"
+        required: true
 
 env:
   AWS_REGION: eu-west-1
@@ -23,24 +27,29 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Configure AWS Credentials (OIDC)
-        uses: aws-actions/configure-aws-credentials@v4
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
         with:
-          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-
+          role-to-assume: arn:aws:iam::305363105399:role/ECRGithubManager
+          aws-region: eu-west-1
+          
       - name: Login to Amazon ECR
-        uses: aws-actions/amazon-ecr-login@v2
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
 
       - name: Ensure ECR repository exists
         run: |
           aws ecr describe-repositories --repository-names $IMAGE_REPO >/dev/null 2>&1 || \
           aws ecr create-repository --repository-name $IMAGE_REPO
 
-      - name: Determine release version
+      - name: Resolve tag (release or manual)
         id: tag
         run: |
-          echo "tag=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
+          if [ "${{ github.event_name }}" = "release" ]; then
+            echo "tag=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+          fi
         env:
           GITHUB_REF_NAME: ${{ github.event.release.tag_name }}
 
