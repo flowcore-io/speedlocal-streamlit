@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.3](https://github.com/flowcore-io/speedlocal-streamlit/compare/v0.2.2...v0.2.3) (2025-09-24)
+
+
+### Bug Fixes
+
+* **helm:** :sparkles: Add Chart.lock and new Helm chart dependencies for flowcore-microservices and flowcore-secret-requester ([be26f7a](https://github.com/flowcore-io/speedlocal-streamlit/commit/be26f7a8cfe8da533e2a9c677af01165a2a9c84b))
+
 ## [0.2.2](https://github.com/flowcore-io/speedlocal-streamlit/compare/v0.2.1...v0.2.2) (2025-09-24)
 
 
