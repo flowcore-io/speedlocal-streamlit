@@ -5,7 +5,7 @@ flowcore-microservices:
     speedlocalStreamlit:
       enabled: true
       deployment:
-        tag: v0.2.0
+        tag: v0.2.2
         replicas: 3
         resources:
           requests:
