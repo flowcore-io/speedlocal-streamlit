@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/flowcore-io/speedlocal-streamlit/compare/v0.4.0...v0.4.1) (2025-09-25)
+
+
+### Bug Fixes
+
+* **docker:** :art: Update Dockerfile to use public ECR Python image ([818deff](https://github.com/flowcore-io/speedlocal-streamlit/commit/818deffca792c5efd68f03ece6f8ffb314dc6907))
+
 ## [0.4.0](https://github.com/flowcore-io/speedlocal-streamlit/compare/v0.3.0...v0.4.0) (2025-09-24)
 
 
