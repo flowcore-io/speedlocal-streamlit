@@ -80,7 +80,7 @@ flowcore-microservices:
 flowcore-secret-requester:
   enabled: false
   requests:
-    customerWildcard:
+    streamlitCustomerWildcard:
       enabled: false
       source:
         name: flowcore-io-customer-tls

@@ -14,10 +14,11 @@ customIngress:
   enabled: false
   hosts: []
   tls: []
+
 flowcore-secret-requester:
   enabled: true
   requests:
-    customerWildcard:
+    streamlitCustomerWildcard:
       enabled: true
     streamlitRegcred:
       enabled: true
