@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.5.0](https://github.com/flowcore-io/speedlocal-streamlit/compare/v0.4.1...v0.5.0) (2025-09-25)
+
+
+### Features
+
+* **helm:** :sparkles: Add multiple Streamlit apps with updated configurations ([b194b55](https://github.com/flowcore-io/speedlocal-streamlit/commit/b194b5581f843703b1bb7e861a760e4b81542023))
+
+
+### Bug Fixes
+
+* **docs:** :sparkles: Update project structure to single-app Streamlit architecture and add TIMES app migration documentation ([b6e40c2](https://github.com/flowcore-io/speedlocal-streamlit/commit/b6e40c26c06b1a61b21b0941ed4cde207ce8c709))
+* **helm:** :rocket: Update all app tags to v0.4.1 ([c965f8d](https://github.com/flowcore-io/speedlocal-streamlit/commit/c965f8de7b272efd7dbb8570ad6b683ae0707ddd))
+
 ## [0.4.1](https://github.com/flowcore-io/speedlocal-streamlit/compare/v0.4.0...v0.4.1) (2025-09-25)
 
 
