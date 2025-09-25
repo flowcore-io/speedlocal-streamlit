@@ -8,227 +8,39 @@ flowcore-microservices:
     # TIMES Data Explorer App
     timesApp:
       enabled: true
-      component: ui
       deployment:
-        image: speedlocal/streamlit-app
         tag: "v0.4.1"
         replicas: 2
-        command: ["python", "-m", "streamlit", "run"]
-        args: ["times_app.py", "--server.port=8501", "--server.address=0.0.0.0", "--server.enableWebsocketCompression=false"]
-        resources:
-          requests:
-            memory: "512Mi"
-            cpu: "500m"
-          limits:
-            memory: "2Gi"
-            cpu: "2"
-        securityContext:
-          runAsNonRoot: true
-          runAsUser: 10001
-          runAsGroup: 10001
-          readOnlyRootFilesystem: true
-      ports:
-        - name: http
-          containerPort: 8501
-      probes:
-        readiness:
-          httpGet:
-            path: /_stcore/health
-            port: 8501
-          initialDelaySeconds: 30
-          periodSeconds: 10
-        liveness:
-          httpGet:
-            path: /_stcore/health
-            port: 8501
-          initialDelaySeconds: 60
-          periodSeconds: 30
       env:
-        STREAMLIT_SERVER_PORT:
-          value: "8501"
-        STREAMLIT_SERVER_ENABLE_WEBSOCKET_COMPRESSION:
-          value: "false"
-        STREAMLIT_THEME_PRIMARY_COLOR:
-          value: "#1f77b4"
-        STREAMLIT_THEME_BACKGROUND_COLOR:
-          value: "#ffffff"
         ENVIRONMENT:
           value: production
-        APP_NAME:
-          value: "TIMES Data Explorer"
-      service:
-        enabled: true
-        httpPort: 8501
-      ingress:
-        enabled: false
     # Energy Flow Maps App  
     flowMapsApp:
       enabled: true
-      component: ui
       deployment:
-        image: speedlocal/streamlit-app
         tag: "v0.4.1"
         replicas: 3
-        command: ["python", "-m", "streamlit", "run"]
-        args: ["flow_maps_app.py", "--server.port=8501", "--server.address=0.0.0.0", "--server.enableWebsocketCompression=false"]
-        resources:
-          requests:
-            memory: "1Gi"
-            cpu: "500m"
-          limits:
-            memory: "3Gi"
-            cpu: "2"
-        securityContext:
-          runAsNonRoot: true
-          runAsUser: 10001
-          runAsGroup: 10001
-          readOnlyRootFilesystem: true
-      ports:
-        - name: http
-          containerPort: 8501
-      probes:
-        readiness:
-          httpGet:
-            path: /_stcore/health
-            port: 8501
-          initialDelaySeconds: 45
-          periodSeconds: 10
-        liveness:
-          httpGet:
-            path: /_stcore/health
-            port: 8501
-          initialDelaySeconds: 90
-          periodSeconds: 30
       env:
-        STREAMLIT_SERVER_PORT:
-          value: "8501"
-        STREAMLIT_SERVER_ENABLE_WEBSOCKET_COMPRESSION:
-          value: "false"
-        STREAMLIT_THEME_PRIMARY_COLOR:
-          value: "#2E8B57"
-        STREAMLIT_THEME_BACKGROUND_COLOR:
-          value: "#ffffff"
         ENVIRONMENT:
           value: production
-        APP_NAME:
-          value: "Energy Flow Maps"
-      service:
-        enabled: true
-        httpPort: 8501
-      ingress:
-        enabled: false
     # Sankey Diagrams App
     sankeyApp:
       enabled: true
-      component: ui
       deployment:
-        image: speedlocal/streamlit-app
         tag: "v0.4.1"
         replicas: 3
-        command: ["python", "-m", "streamlit", "run"]
-        args: ["sankey_app.py", "--server.port=8501", "--server.address=0.0.0.0", "--server.enableWebsocketCompression=false"]
-        resources:
-          requests:
-            memory: "1Gi"
-            cpu: "500m"
-          limits:
-            memory: "3Gi"
-            cpu: "2"
-        securityContext:
-          runAsNonRoot: true
-          runAsUser: 10001
-          runAsGroup: 10001
-          readOnlyRootFilesystem: true
-      ports:
-        - name: http
-          containerPort: 8501
-      probes:
-        readiness:
-          httpGet:
-            path: /_stcore/health
-            port: 8501
-          initialDelaySeconds: 45
-          periodSeconds: 10
-        liveness:
-          httpGet:
-            path: /_stcore/health
-            port: 8501
-          initialDelaySeconds: 90
-          periodSeconds: 30
       env:
-        STREAMLIT_SERVER_PORT:
-          value: "8501"
-        STREAMLIT_SERVER_ENABLE_WEBSOCKET_COMPRESSION:
-          value: "false"
-        STREAMLIT_THEME_PRIMARY_COLOR:
-          value: "#FF6347"
-        STREAMLIT_THEME_BACKGROUND_COLOR:
-          value: "#ffffff"
         ENVIRONMENT:
           value: production
-        APP_NAME:
-          value: "Sankey Diagrams"
-      service:
-        enabled: true
-        httpPort: 8501
-      ingress:
-        enabled: false
     # Database Tools App
     databaseApp:
       enabled: true
-      component: ui
       deployment:
-        image: speedlocal/streamlit-app
         tag: "v0.4.1"
         replicas: 2
-        command: ["python", "-m", "streamlit", "run"]
-        args: ["database_app.py", "--server.port=8501", "--server.address=0.0.0.0", "--server.enableWebsocketCompression=false"]
-        resources:
-          requests:
-            memory: "512Mi"
-            cpu: "500m"
-          limits:
-            memory: "2Gi"
-            cpu: "2"
-        securityContext:
-          runAsNonRoot: true
-          runAsUser: 10001
-          runAsGroup: 10001
-          readOnlyRootFilesystem: true
-      ports:
-        - name: http
-          containerPort: 8501
-      probes:
-        readiness:
-          httpGet:
-            path: /_stcore/health
-            port: 8501
-          initialDelaySeconds: 30
-          periodSeconds: 10
-        liveness:
-          httpGet:
-            path: /_stcore/health
-            port: 8501
-          initialDelaySeconds: 60
-          periodSeconds: 30
       env:
-        STREAMLIT_SERVER_PORT:
-          value: "8501"
-        STREAMLIT_SERVER_ENABLE_WEBSOCKET_COMPRESSION:
-          value: "false"
-        STREAMLIT_THEME_PRIMARY_COLOR:
-          value: "#9370DB"
-        STREAMLIT_THEME_BACKGROUND_COLOR:
-          value: "#ffffff"
         ENVIRONMENT:
           value: production
-        APP_NAME:
-          value: "Database Tools"
-      service:
-        enabled: true
-        httpPort: 8501
-      ingress:
-        enabled: false
 # Enable custom ingress for path-based routing in production
 customIngress:
   enabled: true
