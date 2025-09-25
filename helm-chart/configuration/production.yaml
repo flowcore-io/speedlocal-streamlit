@@ -1,27 +1,25 @@
 # Production environment configuration for Speed Local Streamlit - Multi-App Architecture
 flowcore-microservices:
   webhookBaseURL: https://webhook.api.flowcore.io
-  
   # Disable the default single deployment
   deployments:
     speedlocalStreamlit:
       enabled: false
-    
     # TIMES Data Explorer App
     timesApp:
       enabled: true
       component: ui
       deployment:
         image: speedlocal/streamlit-app
-        tag: "v0.2.3"
+        tag: "v0.4.1"
         replicas: 2
         command: ["python", "-m", "streamlit", "run"]
         args: ["times_app.py", "--server.port=8501", "--server.address=0.0.0.0", "--server.enableWebsocketCompression=false"]
         resources:
-          requests: 
+          requests:
             memory: "512Mi"
             cpu: "500m"
-          limits:   
+          limits:
             memory: "2Gi"
             cpu: "2"
         securityContext:
@@ -63,22 +61,21 @@ flowcore-microservices:
         httpPort: 8501
       ingress:
         enabled: false
-
     # Energy Flow Maps App  
     flowMapsApp:
       enabled: true
       component: ui
       deployment:
         image: speedlocal/streamlit-app
-        tag: "v0.2.3"
+        tag: "v0.4.1"
         replicas: 3
         command: ["python", "-m", "streamlit", "run"]
         args: ["flow_maps_app.py", "--server.port=8501", "--server.address=0.0.0.0", "--server.enableWebsocketCompression=false"]
         resources:
-          requests: 
+          requests:
             memory: "1Gi"
             cpu: "500m"
-          limits:   
+          limits:
             memory: "3Gi"
             cpu: "2"
         securityContext:
@@ -120,22 +117,21 @@ flowcore-microservices:
         httpPort: 8501
       ingress:
         enabled: false
-
     # Sankey Diagrams App
     sankeyApp:
       enabled: true
       component: ui
       deployment:
         image: speedlocal/streamlit-app
-        tag: "v0.2.3"
+        tag: "v0.4.1"
         replicas: 3
         command: ["python", "-m", "streamlit", "run"]
         args: ["sankey_app.py", "--server.port=8501", "--server.address=0.0.0.0", "--server.enableWebsocketCompression=false"]
         resources:
-          requests: 
+          requests:
             memory: "1Gi"
             cpu: "500m"
-          limits:   
+          limits:
             memory: "3Gi"
             cpu: "2"
         securityContext:
@@ -177,22 +173,21 @@ flowcore-microservices:
         httpPort: 8501
       ingress:
         enabled: false
-
     # Database Tools App
     databaseApp:
       enabled: true
       component: ui
       deployment:
         image: speedlocal/streamlit-app
-        tag: "v0.2.3"
+        tag: "v0.4.1"
         replicas: 2
         command: ["python", "-m", "streamlit", "run"]
         args: ["database_app.py", "--server.port=8501", "--server.address=0.0.0.0", "--server.enableWebsocketCompression=false"]
         resources:
-          requests: 
+          requests:
             memory: "512Mi"
             cpu: "500m"
-          limits:   
+          limits:
             memory: "2Gi"
             cpu: "2"
         securityContext:
@@ -234,7 +229,6 @@ flowcore-microservices:
         httpPort: 8501
       ingress:
         enabled: false
-
 # Enable custom ingress for path-based routing in production
 customIngress:
   enabled: true
@@ -244,7 +238,6 @@ customIngress:
     - secretName: flowcore-io-customer-tls
       hosts:
         - speedlocal-streamlit.customer.flowcore.io
-
 flowcore-secret-requester:
   enabled: true
   requests:
