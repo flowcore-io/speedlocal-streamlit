@@ -5,7 +5,7 @@ flowcore-microservices:
     timesApp:
       enabled: true
       deployment:
-        tag: "v0.5.0"
+        tag: "v0.5.1"
         replicas: 2
       env:
         ENVIRONMENT:
@@ -14,10 +14,11 @@ customIngress:
   enabled: false
   hosts: []
   tls: []
+
 flowcore-secret-requester:
   enabled: true
   requests:
-    customerWildcard:
+    streamlitCustomerWildcard:
       enabled: true
     streamlitRegcred:
       enabled: true

@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.1](https://github.com/flowcore-io/speedlocal-streamlit/compare/v0.5.0...v0.5.1) (2025-09-25)
+
+
+### Bug Fixes
+
+* **helm:** :rocket: Update timesApp tag to v0.5.0 ([91a2f48](https://github.com/flowcore-io/speedlocal-streamlit/commit/91a2f4821bb9a63c1f7a8b413976c16db98b616a))
+* **times_app:** :sparkles: Update page title in TIMES Data Explorer ([752845e](https://github.com/flowcore-io/speedlocal-streamlit/commit/752845ebc25fd6c75f246f57c172251cbc1de211))
+
 ## [0.5.0](https://github.com/flowcore-io/speedlocal-streamlit/compare/v0.4.1...v0.5.0) (2025-09-25)
 
 
