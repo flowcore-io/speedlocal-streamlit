@@ -29,7 +29,7 @@ from datetime import datetime
 script_runner.SCRIPT_RUN_CONTEXT_ATTR_NAME = "STREAMLIT_SCRIPT_RUN_CONTEXT"
 
 # Set page configuration
-st.set_page_config(page_title="SpeedLocal: TIMES Data Explorer!", layout="wide")
+st.set_page_config(page_title="SpeedLocal: TIMES Data Explorer", layout="wide")
 
 # Title
 st.title("SpeedLocal: TIMES Data Explorer!")
