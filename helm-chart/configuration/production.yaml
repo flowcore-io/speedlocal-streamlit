@@ -1,11 +1,7 @@
-# Production environment configuration for Speed Local Streamlit - Multi-App Architecture
+# Production environment configuration for Speed Local Streamlit (single app)
 flowcore-microservices:
   webhookBaseURL: https://webhook.api.flowcore.io
-  # Disable the default single deployment
   deployments:
-    speedlocalStreamlit:
-      enabled: false
-    # TIMES Data Explorer App
     timesApp:
       enabled: true
       deployment:
@@ -14,42 +10,12 @@ flowcore-microservices:
       env:
         ENVIRONMENT:
           value: production
-    # Energy Flow Maps App  
-    flowMapsApp:
-      enabled: true
-      deployment:
-        tag: "v0.4.1"
-        replicas: 3
-      env:
-        ENVIRONMENT:
-          value: production
-    # Sankey Diagrams App
-    sankeyApp:
-      enabled: true
-      deployment:
-        tag: "v0.4.1"
-        replicas: 3
-      env:
-        ENVIRONMENT:
-          value: production
-    # Database Tools App
-    databaseApp:
-      enabled: true
-      deployment:
-        tag: "v0.4.1"
-        replicas: 2
-      env:
-        ENVIRONMENT:
-          value: production
-# Enable custom ingress for path-based routing in production
+
 customIngress:
-  enabled: true
-  hosts:
-    - host: speedlocal-streamlit.customer.flowcore.io
-  tls:
-    - secretName: flowcore-io-customer-tls
-      hosts:
-        - speedlocal-streamlit.customer.flowcore.io
+  enabled: false
+  hosts: []
+  tls: []
+
 flowcore-secret-requester:
   enabled: true
   requests:

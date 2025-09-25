@@ -1,180 +1,125 @@
-# Project Structure - Multi-App Streamlit Architecture
+# Project Structure - Single-App Streamlit Architecture
 
 ## 📁 Current File Structure
 
 ```
 speedlocal-streamlit/
 ├── streamlit-app/
-│   ├── app/
-│   │   ├── main.py                    # Original single-app entry (router-based)
-│   │   └── utils/
-│   │       ├── database.py            # Database connection utilities
-│   │       └── geo_settings.py        # Geographic data settings
-│   ├── pages/                         # Page modules for router app
-│   │   ├── home.py                    # Landing/navigation page
-│   │   ├── times_explorer.py          # TIMES data exploration module
-│   │   ├── energy_flow_maps.py        # Energy flow maps module (lazy imports)
-│   │   ├── sankey_diagrams.py         # Sankey diagrams module
-│   │   └── database_tools.py          # Database tools module
-│   ├── main.py                        # Router-based main app (query param routing)
-│   ├── times_app.py                   # ✅ Standalone TIMES Explorer app
-│   ├── flow_maps_app.py               # ✅ Standalone Energy Flow Maps app
-│   ├── sankey_app.py                  # ✅ Standalone Sankey Diagrams app
-│   ├── database_app.py                # ✅ Standalone Database Tools app
-│   ├── Dockerfile                     # Multi-app container configuration
-│   └── requirements.txt               # Python dependencies
+│   ├── Dockerfile                     # Container configuration for single app
+│   ├── README.md                      # App-specific documentation
+│   ├── requirements.txt               # Python dependencies
+│   ├── times_app.py                   # Main Streamlit entry point (TIMES Explorer)
+│   ├── utils/
+│   │   └── settings.py                # Geographic defaults and cached config values
+│   └── images/
+│       ├── speed-local.jpg            # Branding asset
+│       └── map.png                    # Energy system reference map
 ├── helm-chart/
 │   ├── Chart.yaml                     # Helm chart metadata
-│   ├── values.yaml                    # Base values with custom ingress
+│   ├── values.yaml                    # Default single-app values (multi-app stubs disabled)
 │   ├── configuration/
-│   │   └── production.yaml            # ✅ Multi-app production config
+│   │   └── production.yaml            # Legacy multi-app overrides (pending cleanup)
 │   └── templates/
-│       └── custom-ingress.yaml        # Path-based ingress routing
-├── MULTI_APP_DEPLOYMENT.md            # Comprehensive deployment guide
-├── DEPLOYMENT_COMMANDS.md             # Quick command reference
-└── IMPLEMENTATION_SUMMARY.md          # Architecture overview
+│       └── custom-ingress.yaml        # Path-based ingress (unused for single-app)
+├── scripts/
+│   └── build-and-deploy.sh            # Helper for local ECR builds & pushes
+├── docker-compose.yml                 # Local container orchestration (single service)
+├── README.md                          # Repository overview
+├── CHANGELOG.md                       # Release notes
+└── TIMES_APP_MIGRATION.md             # Migration record for TIMES Explorer
 ```
 
-## 🚀 Current Architecture
+## 🚀 Application Overview
 
-### Multi-App Production Deployment
-The system now deploys as **4 separate Streamlit applications** with the following routing:
-
-| Path | Application | Entry Point | Purpose |
-|------|-------------|-------------|---------|
-| `/times` | TIMES Data Explorer | `times_app.py` | Data filtering and analysis |
-| `/flowmaps` | Energy Flow Maps | `flow_maps_app.py` | Geographic visualization |
-| `/sankey` | Sankey Diagrams | `sankey_app.py` | Flow pathway diagrams |
-| `/database` | Database Tools | `database_app.py` | SQL interface and exploration |
-
-### Key Features ✅
-- **Path-Based Routing**: Clean URLs via NGINX ingress
-- **Independent Scaling**: Each app scales separately based on resource needs
-- **Lazy Imports**: Import conflicts resolved with lazy loading
-- **WebSocket Support**: Full Streamlit functionality preserved
-- **Sticky Sessions**: User sessions maintained per application
-- **Production Ready**: Comprehensive health checks and monitoring
+- **Primary App**: `streamlit-app/times_app.py`
+- **Runtime Command**: `python -m streamlit run times_app.py`
+- **Core Capabilities**:
+  - Azure Blob Storage downloader with smart caching & expiry detection
+  - Local DuckDB support for offline analysis
+  - Energy & emissions dashboards with Plotly visualisations
+  - Scenario comparison controls in Streamlit sidebar
+- **Supporting Assets**:
+  - `utils/settings.py` supplies geographic defaults and cached selectors
+  - `images/` directory hosts branding and map visuals referenced in the UI
+  - `requirements.txt` pins Streamlit, DuckDB, pandas, Plotly, requests, etc.
+  - `Dockerfile` builds a hardened image (non-root, health check) for deployment
 
 ## 🔧 Deployment Configuration
 
-### Production Deployment
-```bash
-helm upgrade --install speedlocal-streamlit ./helm-chart \
-  -f configuration/production.yaml \
-  --namespace speedlocal
-```
+### Helm Deployment (Current Target)
 
-**Deployed Services:**
-- `times-app` (2 replicas, 512Mi-2Gi memory)
-- `flow-maps-app` (3 replicas, 1Gi-3Gi memory) 
-- `sankey-app` (3 replicas, 1Gi-3Gi memory)
-- `database-app` (2 replicas, 512Mi-2Gi memory)
+- Enable only the `timesApp` deployment in `helm-chart/values.yaml` or environment-specific overrides
+- Update the image tag under `flowcore-microservices.deployments.timesApp.deployment.tag`
+- Ensure ingress remains disabled unless a dedicated hostname is configured
+- Apply with:
+  ```bash
+  helm upgrade --install speedlocal-streamlit ./helm-chart --namespace speedlocal
+  ```
+- Legacy multi-app keys (`flowMapsApp`, `sankeyApp`, `databaseApp`) remain in `values.yaml` and `configuration/production.yaml` for historical reference but should stay disabled.
 
-**Ingress Routes:**
-- `https://speedlocal-streamlit.customer.flowcore.io/times`
-- `https://speedlocal-streamlit.customer.flowcore.io/flowmaps`
-- `https://speedlocal-streamlit.customer.flowcore.io/sankey`
-- `https://speedlocal-streamlit.customer.flowcore.io/database`
+### Resource Recommendations
 
-## 🛠️ Development Options
+- Replicas: 2 (scales horizontally via Helm values)
+- CPU: requests `500m`, limits `2`
+- Memory: requests `512Mi`, limits `2Gi`
+- Port: 8501
+- Liveness/Readiness: `/_stcore/health`
 
-### Option 1: Individual App Development
-Test each app independently:
-```bash
-cd streamlit-app
-streamlit run times_app.py --server.port=8501
-streamlit run flow_maps_app.py --server.port=8502
-streamlit run sankey_app.py --server.port=8503
-streamlit run database_app.py --server.port=8504
-```
+## 🛠️ Development Workflows
 
-### Option 2: Router App Development
-Test the router-based app (query param routing):
-```bash
-streamlit run main.py --server.port=8501
-# Access via: http://localhost:8501/?route=times
-```
+- **Local (Streamlit CLI)**
+  ```bash
+  cd streamlit-app
+  pip install -r requirements.txt
+  streamlit run times_app.py --server.port=8501
+  ```
+- **Docker**
+  ```bash
+  cd streamlit-app
+  docker build -t times-explorer .
+  docker run -p 8501:8501 times-explorer
+  ```
+- **Docker Compose (repo root)**
+  ```bash
+  docker compose up --build
+  ```
+- **Manual Build & Push**
+  ```bash
+  ./scripts/build-and-deploy.sh
+  ```
 
-### Option 3: Original App Structure
-The original single app is still available at `app/main.py`:
-```bash
-streamlit run app/main.py --server.port=8501
-```
+## 🧹 Cleanup & Legacy Artifacts
 
-## 🧹 Cleanup Completed
+- Removed router-based modules and duplicate standalone apps (`flow_maps_app.py`, `sankey_app.py`, `database_app.py`, legacy `app/` tree)
+- Consolidated documentation into this file, `README.md`, and `TIMES_APP_MIGRATION.md`
+- Retained `configuration/production.yaml` to preserve historical multi-app settings pending formal retirement
 
-### Removed Files:
-- `apps/` directory (duplicate standalone apps)
-- `app/pages/` directory (emoji-named pages)
-- `landing_page.py` (unused landing page)
-- `helm-chart/configuration/multi-app.yaml` (consolidated into production.yaml)
+## 🔐 Security & Observability
 
-### Clean Structure:
-- ✅ No duplicate code
-- ✅ Single source of truth for each app
-- ✅ Clear separation between router and standalone apps
-- ✅ Consistent naming conventions
+- Containers run as non-root user `10001` with optional read-only filesystem
+- Health checks are wired to Streamlit's `/_stcore/health` endpoint
+- TLS terminates at ingress; enable `customIngress` only when dedicated hostname is available
+- Caching is handled within Streamlit; no persistent volumes required
+- Secrets management via `flowcore-secret-requester` remains disabled by default
 
-## 📊 Resource Allocation
+## 🔄 CI/CD Workflow Summary
 
-### Production Resources (Total):
-- **Memory**: ~10Gi requests, ~32Gi limits
-- **CPU**: ~4 cores requests, ~16 cores limits  
-- **Pods**: 10 total across 4 applications
-- **Services**: 4 independent services with load balancing
-
-### Per-App Scaling:
-- **TIMES Explorer**: Light scaling (data queries)
-- **Flow Maps**: Heavy scaling (geospatial processing)
-- **Sankey Diagrams**: Heavy scaling (complex visualizations)
-- **Database Tools**: Light scaling (SQL operations)
-
-## 🔐 Security & Production Features
-
-- **Non-root Containers**: All apps run as user 10001:10001
-- **Read-only Filesystem**: Enhanced security posture
-- **Resource Limits**: Prevention of resource exhaustion
-- **Health Checks**: Readiness and liveness probes per app
-- **TLS Termination**: HTTPS via ingress controller
-- **Network Policies**: Apps can be isolated if needed
-
-## 🔄 CI/CD Workflow Updates
-
-### Automated Deployments
-The CI/CD workflow has been updated to handle all 4 apps:
-
-```yaml
-# When a release is published, the workflow will:
-# 1. Build a single Docker image
-# 2. Push to ECR with the release tag
-# 3. Update ALL app deployments in production.yaml:
-#    - timesApp.deployment.tag
-#    - flowMapsApp.deployment.tag
-#    - sankeyApp.deployment.tag
-#    - databaseApp.deployment.tag
-# 4. Commit and push the changes
-```
-
-**Workflow Features:**
-- ✅ Single image build for all apps
-- ✅ Atomic version updates across all deployments
-- ✅ Automatic Helm chart updates
-- ✅ Git commit with descriptive message
+- GitHub Actions workflow (`.github/workflows/streamlit-cicd.yml`) builds the image from `streamlit-app` and pushes to Amazon ECR (`speedlocal/streamlit-app`)
+- Step to update multi-app tags in `configuration/production.yaml` remains for backwards compatibility but is considered legacy behaviour
+- Commits are pushed automatically when Helm values change after a release
 
 ## 🎯 Next Steps
 
-1. **Deploy to Production**: Use the updated `production.yaml`
-2. **Test CI/CD Pipeline**: Create a test release to verify all apps update
-3. **Monitor Performance**: Track resource usage per app
-4. **Optimize Scaling**: Adjust replicas based on actual usage
-5. **Add Metrics**: Implement custom Prometheus metrics
-6. **Database Optimization**: Consider connection pooling
+1. Confirm `timesApp` is the only enabled deployment across environments
+2. Deprecate or remove unused multi-app configuration once no longer required
+3. Monitor production metrics and adjust resource requests as usage grows
+4. Add observability hooks (logging/metrics) as needed for long-term operations
+5. Document any environment-specific secrets or overrides in `README.md`
 
-## 💡 Benefits Achieved
+## 💡 Benefits of the Single-App Focus
 
-- ✅ **Resolved Import Conflicts**: pybind11 issues eliminated
-- ✅ **Independent Scaling**: Resource optimization per workload
-- ✅ **Clean URLs**: Professional path-based routing
-- ✅ **Operational Flexibility**: Deploy/update apps independently
-- ✅ **Development Efficiency**: Multiple development approaches
-- ✅ **Production Ready**: Comprehensive monitoring and health checks
+- ✅ Simplified deployment pipeline with one image and one Helm release path
+- ✅ Reduced maintenance burden by eliminating duplicate code paths
+- ✅ Clear documentation for developers and operators
+- ✅ Smaller attack surface and easier security hardening
+- ✅ Streamlined troubleshooting with a single source of truth

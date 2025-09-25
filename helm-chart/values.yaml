@@ -63,169 +63,19 @@ flowcore-microservices:
         enabled: true
         httpPort: 8501
       ingress:
-        enabled: false
-
-    flowMapsApp:
-      enabled: false
-      component: ui
-      deployment:
-        image: speedlocal/streamlit-app
-        tag: latest
-        replicas: 3
-        command: ["python", "-m", "streamlit", "run"]
-        args: ["flow_maps_app.py", "--server.port=8501", "--server.address=0.0.0.0", "--server.enableWebsocketCompression=false"]
-        resources:
-          requests:
-            memory: "1Gi"
-            cpu: "500m"
-          limits:
-            memory: "3Gi"
-            cpu: "2"
-        securityContext:
-          runAsNonRoot: true
-          runAsUser: 10001
-          runAsGroup: 10001
-          readOnlyRootFilesystem: true
-      ports:
-        - name: http
-          containerPort: 8501
-      probes:
-        readiness:
-          httpGet:
-            path: /_stcore/health
-            port: 8501
-          initialDelaySeconds: 45
-          periodSeconds: 10
-        liveness:
-          httpGet:
-            path: /_stcore/health
-            port: 8501
-          initialDelaySeconds: 90
-          periodSeconds: 30
-      env:
-        STREAMLIT_SERVER_PORT:
-          value: "8501"
-        STREAMLIT_SERVER_ENABLE_WEBSOCKET_COMPRESSION:
-          value: "false"
-        STREAMLIT_THEME_PRIMARY_COLOR:
-          value: "#2E8B57"
-        STREAMLIT_THEME_BACKGROUND_COLOR:
-          value: "#ffffff"
-        APP_NAME:
-          value: "Energy Flow Maps"
-      service:
         enabled: true
-        httpPort: 8501
-      ingress:
-        enabled: false
-
-    sankeyApp:
-      enabled: false
-      component: ui
-      deployment:
-        image: speedlocal/streamlit-app
-        tag: latest
-        replicas: 3
-        command: ["python", "-m", "streamlit", "run"]
-        args: ["sankey_app.py", "--server.port=8501", "--server.address=0.0.0.0", "--server.enableWebsocketCompression=false"]
-        resources:
-          requests:
-            memory: "1Gi"
-            cpu: "500m"
-          limits:
-            memory: "3Gi"
-            cpu: "2"
-        securityContext:
-          runAsNonRoot: true
-          runAsUser: 10001
-          runAsGroup: 10001
-          readOnlyRootFilesystem: true
-      ports:
-        - name: http
-          containerPort: 8501
-      probes:
-        readiness:
-          httpGet:
-            path: /_stcore/health
-            port: 8501
-          initialDelaySeconds: 45
-          periodSeconds: 10
-        liveness:
-          httpGet:
-            path: /_stcore/health
-            port: 8501
-          initialDelaySeconds: 90
-          periodSeconds: 30
-      env:
-        STREAMLIT_SERVER_PORT:
-          value: "8501"
-        STREAMLIT_SERVER_ENABLE_WEBSOCKET_COMPRESSION:
-          value: "false"
-        STREAMLIT_THEME_PRIMARY_COLOR:
-          value: "#FF6347"
-        STREAMLIT_THEME_BACKGROUND_COLOR:
-          value: "#ffffff"
-        APP_NAME:
-          value: "Sankey Diagrams"
-      service:
-        enabled: true
-        httpPort: 8501
-      ingress:
-        enabled: false
-
-    databaseApp:
-      enabled: false
-      component: ui
-      deployment:
-        image: speedlocal/streamlit-app
-        tag: latest
-        replicas: 2
-        command: ["python", "-m", "streamlit", "run"]
-        args: ["database_app.py", "--server.port=8501", "--server.address=0.0.0.0", "--server.enableWebsocketCompression=false"]
-        resources:
-          requests:
-            memory: "512Mi"
-            cpu: "500m"
-          limits:
-            memory: "2Gi"
-            cpu: "2"
-        securityContext:
-          runAsNonRoot: true
-          runAsUser: 10001
-          runAsGroup: 10001
-          readOnlyRootFilesystem: true
-      ports:
-        - name: http
-          containerPort: 8501
-      probes:
-        readiness:
-          httpGet:
-            path: /_stcore/health
-            port: 8501
-          initialDelaySeconds: 30
-          periodSeconds: 10
-        liveness:
-          httpGet:
-            path: /_stcore/health
-            port: 8501
-          initialDelaySeconds: 60
-          periodSeconds: 30
-      env:
-        STREAMLIT_SERVER_PORT:
-          value: "8501"
-        STREAMLIT_SERVER_ENABLE_WEBSOCKET_COMPRESSION:
-          value: "false"
-        STREAMLIT_THEME_PRIMARY_COLOR:
-          value: "#9370DB"
-        STREAMLIT_THEME_BACKGROUND_COLOR:
-          value: "#ffffff"
-        APP_NAME:
-          value: "Database Tools"
-      service:
-        enabled: true
-        httpPort: 8501
-      ingress:
-        enabled: false
+        annotations:
+          nginx.org/proxy-buffering: "false"
+          nginx.org/proxy-read-timeout: "3600s"
+          nginx.org/proxy-send-timeout: "3600s"
+          nginx.org/proxy-connect-timeout: "60s"
+          nginx.org/client-max-body-size: "50m"
+          nginx.org/websocket-services: "times-app"
+          nginx.org/sticky-cookie-services: "times-app route expires=1h path=/"
+        route:
+          - hosts:
+              - speedlocal-times.customer.flowcore.io
+            tlsSecret: flowcore-io-customer-tls
 
 flowcore-secret-requester:
   enabled: false
@@ -241,8 +91,7 @@ flowcore-secret-requester:
         name: regcred
         namespace: flowcore-core
 
-# Custom ingress for multi-app routing (disabled by default)
-# Enable this when deploying with multi-app.yaml configuration
+# Custom ingress for the single Streamlit app (disabled by default)
 customIngress:
   enabled: false
   hosts:
