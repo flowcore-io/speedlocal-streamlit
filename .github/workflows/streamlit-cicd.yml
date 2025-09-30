@@ -97,7 +97,7 @@ jobs:
           fi
 
           git add "${PROD_VALUES}"
-          git commit -m "fix(helm): :rocket: Update ${DEPLOYMENT_KEY} tag to ${TAG}"
+          git commit -m "chore(helm): :rocket: Update ${DEPLOYMENT_KEY} tag to ${TAG}"
           git push origin HEAD:main
 
           echo "Committed and pushed ${PROD_VALUES} with tag ${TAG}."

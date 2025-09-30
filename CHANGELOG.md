@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.5.2](https://github.com/flowcore-io/speedlocal-streamlit/compare/v0.5.1...v0.5.2) (2025-09-25)
+
+
+### Bug Fixes
+
+* **helm:** :rocket: Update timesApp tag to v0.5.1 ([ff857c2](https://github.com/flowcore-io/speedlocal-streamlit/commit/ff857c2932d6fc5770724ed8b04944908ac27d81))
+* **helm:** :sparkles: Rename customerWildcard to streamlitCustomerWildcard in values and production configurations ([d91a8d0](https://github.com/flowcore-io/speedlocal-streamlit/commit/d91a8d0dc398e56ba80cba6c7404f32b34c9ddc7))
+* removed explamation mark ([0c1c51e](https://github.com/flowcore-io/speedlocal-streamlit/commit/0c1c51ec8ef70a0528b1574af0365cd72f6ba3aa))
+
 ## [0.5.1](https://github.com/flowcore-io/speedlocal-streamlit/compare/v0.5.0...v0.5.1) (2025-09-25)
 
 
