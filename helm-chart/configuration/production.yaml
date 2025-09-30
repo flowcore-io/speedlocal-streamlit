@@ -5,7 +5,7 @@ flowcore-microservices:
     timesApp:
       enabled: true
       deployment:
-        tag: "v0.5.2"
+        tag: "v0.5.3"
         replicas: 2
       env:
         ENVIRONMENT:
