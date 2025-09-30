@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.4](https://github.com/flowcore-io/speedlocal-streamlit/compare/v0.5.3...v0.5.4) (2025-09-30)
+
+
+### Bug Fixes
+
+* updated duckdb url link ([a7d6caa](https://github.com/flowcore-io/speedlocal-streamlit/commit/a7d6caaa647cee6a89b2a3d5298dac4ff13c95d1))
+
 ## [0.5.3](https://github.com/flowcore-io/speedlocal-streamlit/compare/v0.5.2...v0.5.3) (2025-09-30)
 
 
