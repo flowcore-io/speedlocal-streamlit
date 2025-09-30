@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.3](https://github.com/flowcore-io/speedlocal-streamlit/compare/v0.5.2...v0.5.3) (2025-09-30)
+
+
+### Bug Fixes
+
+* **helm:** :rocket: Update timesApp tag to v0.5.2 ([d749fb6](https://github.com/flowcore-io/speedlocal-streamlit/commit/d749fb66ad806615648c9c5104f4f363ced66a38))
+* updated duckdb url used by times_app as default to only include results from Bornholm. ([2cca25a](https://github.com/flowcore-io/speedlocal-streamlit/commit/2cca25ac2d68e99f34b7ed35b75ee50fe5089db1))
+
 ## [0.5.2](https://github.com/flowcore-io/speedlocal-streamlit/compare/v0.5.1...v0.5.2) (2025-09-25)
 
 
