@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.6](https://github.com/flowcore-io/speedlocal-streamlit/compare/v0.5.5...v0.5.6) (2025-10-01)
+
+
+### Bug Fixes
+
+* new default link to duckdb database ([a8332ea](https://github.com/flowcore-io/speedlocal-streamlit/commit/a8332ea73fa32fa32d9a9fe305373e0e2aad8120))
+
 ## [0.5.5](https://github.com/flowcore-io/speedlocal-streamlit/compare/v0.5.4...v0.5.5) (2025-09-30)
 
 
