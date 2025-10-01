@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.7](https://github.com/flowcore-io/speedlocal-streamlit/compare/v0.5.6...v0.5.7) (2025-10-01)
+
+
+### Bug Fixes
+
+* added beta version description in title and removed 'NA' and 'AFO' sector. ([347fe84](https://github.com/flowcore-io/speedlocal-streamlit/commit/347fe846fb206853f6c34f511c58c9c4746d17f9))
+
 ## [0.5.6](https://github.com/flowcore-io/speedlocal-streamlit/compare/v0.5.5...v0.5.6) (2025-10-01)
 
 
