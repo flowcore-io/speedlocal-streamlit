@@ -32,10 +32,10 @@ script_runner.SCRIPT_RUN_CONTEXT_ATTR_NAME = "STREAMLIT_SCRIPT_RUN_CONTEXT"
 st.set_page_config(page_title="SpeedLocal: TIMES Data Explorer", layout="wide")
 
 # Title
-st.title("SpeedLocal: TIMES Data Explorer!")
+st.title("SpeedLocal: TIMES Data Explorer (beta version!")
 
 # Define sectors to exclude
-EXCLUDED_SECTORS = [ 'DMZ', 'SYS', 'DHT','ELT','TRD']
+EXCLUDED_SECTORS = [ 'AFO','DMZ', 'SYS', 'DHT','ELT','TRD','NA']
 
 def check_azure_url_expiry(url):
     """
