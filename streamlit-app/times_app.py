@@ -425,7 +425,7 @@ def main():
     
     if connection_type == "Azure URL":
         # Default Azure URL - your provided URL
-        default_url = "https://speedlocal.flowcore.app/api/duckdb/share/2896dc1179d553d9f7508ebe87ce8991"
+        default_url = "https://speedlocal.flowcore.app/api/duckdb/share/2f8e2b30027a2bdad5fa79b4a68ff9bc"
         
         db_source = st.sidebar.text_area(
             "Enter Azure Blob Storage URL:",
