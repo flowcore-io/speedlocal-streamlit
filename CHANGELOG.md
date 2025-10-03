@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.8](https://github.com/flowcore-io/speedlocal-streamlit/compare/v0.5.7...v0.5.8) (2025-10-03)
+
+
+### Bug Fixes
+
+* **sectoradj:** Adjusted which sectors are excluded from the streamlit homepage. ([1f181db](https://github.com/flowcore-io/speedlocal-streamlit/commit/1f181dbef65345a23b7d321bea89e495e399f415))
+
 ## [0.5.7](https://github.com/flowcore-io/speedlocal-streamlit/compare/v0.5.6...v0.5.7) (2025-10-01)
 
 
