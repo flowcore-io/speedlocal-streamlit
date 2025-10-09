@@ -104,7 +104,7 @@ class PandasDFCreator:
         for _, row in group_df.iterrows():
             conditions = self.build_filter_conditions(row)
             label_expr = self.get_label_expression(row, table_name)
-            sql = f"SELECT tr.*, {label_expr} AS label FROM timesreport_facts tr"
+            sql = f"SELECT tr.*, {label_expr} AS label FROM timesreport tr"
             if conditions:
                 sql += " WHERE " + " AND ".join(conditions)
             df = con.sql(sql).df()
