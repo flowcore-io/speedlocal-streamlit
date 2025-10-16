@@ -180,10 +180,10 @@ class FilterUI:
         
         # Display filter summary
         active_filters = self.generic_filter.get_active_filters()
-        if active_filters:
-            st.sidebar.markdown("---")
-            st.sidebar.caption("**Filter Summary:**")
-            st.sidebar.caption(self.generic_filter.get_filter_summary())
+        # if active_filters:
+        #     st.sidebar.markdown("---")
+        #     st.sidebar.caption("**Filter Summary:**")
+        #     st.sidebar.caption(self.generic_filter.get_filter_summary())
         
         return active_filters
 

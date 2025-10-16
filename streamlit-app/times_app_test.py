@@ -52,16 +52,18 @@ def main(mapping_csv: str):
     df_energy = loader.get_table("energy") if loader else table_dfs.get("energy")
     df_emissions = loader.get_table("emissions") if loader else table_dfs.get("emissions")
 
-    # Combine all DataFrames for filtering (or use a specific one)
-    # Using energy table as the base for filters, but you can combine multiple tables
-    first_table_df = None
-    if table_dfs:
-        first_table_name = list(table_dfs.keys())[0]
-        first_table_df = table_dfs[first_table_name]
+    # Combine all DataFrames for filtering
+    # Concatenate all tables to get all unique values across tables
+    all_dfs = []
+    for table_name, df in table_dfs.items():
+        if df is not None and not df.empty:
+            all_dfs.append(df)
     
-    if first_table_df is None or first_table_df.empty:
+    if not all_dfs:
         st.error("No data available for filtering.")
         return
+    
+    combined_df = pd.concat(all_dfs, ignore_index=True)
     
     # Define filterable columns (customize based on your needs)
     filterable_columns = ['scen', 'sector', 'subsector', 'comgroup', 'topic', 'attr', 'year']
@@ -69,7 +71,7 @@ def main(mapping_csv: str):
     # Initialize GenericFilter if not in session state
     if 'generic_filter' not in st.session_state:
         st.session_state['generic_filter'] = GenericFilter(
-            df=first_table_df,
+            df=combined_df,
             filterable_columns=filterable_columns
         )
     
@@ -89,9 +91,9 @@ def main(mapping_csv: str):
     active_filters = filter_ui.render()
     
     # Apply filters to get sectors list (excluding certain sectors)
-    if first_table_df is not None and not first_table_df.empty:
+    if combined_df is not None and not combined_df.empty:
         # Apply filters to the dataframe
-        filtered_df = generic_filter.apply_filters(first_table_df)
+        filtered_df = generic_filter.apply_filters(combined_df)
         
         if 'sector' in filtered_df.columns:
             sectors = sorted(filtered_df['sector'].unique())
@@ -110,108 +112,161 @@ def main(mapping_csv: str):
     with topic_tabs[0]:
         st.header("Energy Visualization")
 
-        # --- Top-level aggregate plot ---
-        st.subheader("Aggregate Energy Plot (All Sectors)")
-        selected_agg_sectors = st.multiselect(
-            "Select sectors to include in aggregate plot",
-            options=sectors,
-            default=sectors
-        )
-
-        energy_plotter = TimesReportPlotter(df_energy)
-        fig_energy_agg = energy_plotter.stacked_bar(
-            x_col="year",
-            y_col="value",
-            group_col="comgroup",
-            scenario_col="scen",
-            filter_dict={"sector": selected_agg_sectors, "topic": "energy", "attr": "f_in"},
-            title="Aggregate Energy Input"
-        )
-        if fig_energy_agg:
-            st.plotly_chart(fig_energy_agg, use_container_width=True)
+        # Apply filters to energy data first
+        if df_energy is not None and not df_energy.empty:
+            df_energy_filtered = generic_filter.apply_filters(df_energy)
         else:
-            st.warning("No data for selected sectors in aggregate plot.")
+            st.error("Energy data not available.")
+            df_energy_filtered = pd.DataFrame()
 
-        # --- Bottom-level disaggregated plots per sector ---
-        st.subheader("Disaggregated Energy Plots per Sector")
-        for sector in sectors:
-            st.markdown(f"**{sector}**")
-            fig_energy_sector = energy_plotter.stacked_bar(
-                x_col="year",
-                y_col="value",
-                group_col="comgroup",
-                scenario_col="scen",
-                filter_dict={"sector": sector, "topic": "energy", "attr": "f_in"},
-                title=f"Energy Input for {sector}"
+        if df_energy_filtered.empty:
+            st.warning("No energy data available after applying filters.")
+        else:
+            # --- Top-level aggregate plot ---
+            st.subheader("Aggregate Energy Plot (All Sectors)")
+            selected_agg_sectors = st.multiselect(
+                "Select sectors to include in aggregate plot",
+                options=sectors,
+                default=sectors,
+                key="energy_agg_sectors"
             )
-            if fig_energy_sector:
-                st.plotly_chart(fig_energy_sector, use_container_width=True)
-            else:
-                st.warning(f"No energy data for sector {sector}.")
+
+            if selected_agg_sectors:
+                # Further filter by selected sectors
+                df_energy_agg = df_energy_filtered[
+                    (df_energy_filtered['sector'].isin(selected_agg_sectors)) &
+                    (df_energy_filtered['topic'] == 'energy') &
+                    (df_energy_filtered['attr'] == 'f_in')
+                ]
+                
+                if not df_energy_agg.empty:
+                    energy_plotter = TimesReportPlotter(df_energy_agg)
+                    fig_energy_agg = energy_plotter.stacked_bar(
+                        x_col="year",
+                        y_col="value",
+                        group_col="comgroup",
+                        scenario_col="scen",
+                        filter_dict=None,  # Already filtered
+                        title="Aggregate Energy Input"
+                    )
+                    if fig_energy_agg:
+                        st.plotly_chart(fig_energy_agg, use_container_width=True)
+                    else:
+                        st.warning("No data for selected sectors in aggregate plot.")
+                else:
+                    st.warning("No data available after applying filters.")
+
+            # --- Bottom-level disaggregated plots per sector ---
+            st.subheader("Disaggregated Energy Plots per Sector")
+            for sector in sectors:
+                st.markdown(f"**{sector}**")
+                
+                # Filter for this specific sector
+                df_sector = df_energy_filtered[
+                    (df_energy_filtered['sector'] == sector) &
+                    (df_energy_filtered['topic'] == 'energy') &
+                    (df_energy_filtered['attr'] == 'f_in')
+                ]
+                
+                if not df_sector.empty:
+                    energy_plotter = TimesReportPlotter(df_sector)
+                    fig_energy_sector = energy_plotter.stacked_bar(
+                        x_col="year",
+                        y_col="value",
+                        group_col="comgroup",
+                        scenario_col="scen",
+                        filter_dict=None,  # Already filtered
+                        title=f"Energy Input for {sector}"
+                    )
+                    if fig_energy_sector:
+                        st.plotly_chart(fig_energy_sector, use_container_width=True)
+                    else:
+                        st.warning(f"No energy data for sector {sector}.")
+                else:
+                    st.info(f"No data available for sector {sector} with current filters.")
 
     # ---------------------- EMISSIONS TAB ----------------------
     with topic_tabs[1]:
         st.header("Emissions Visualization")
 
-        # --- Top-level aggregate plot ---
-        st.subheader("Aggregate Emissions Plot (All Sectors)")
-        selected_agg_sectors = st.multiselect(
-            "Select sectors to include in aggregate plot",
-            options=sectors,
-            default=sectors,
-            key="emission_agg"
-        )
+        # Apply filters to emissions data first
+        if df_emissions is not None and not df_emissions.empty:
+            df_emissions_filtered = generic_filter.apply_filters(df_emissions)
+        else:
+            st.error("Emissions data not available.")
+            df_emissions_filtered = pd.DataFrame()
 
-        if selected_agg_sectors:
-            # Aggregate values per sector and scenario
-            df_em_agg = df_emissions[
-                (df_emissions['sector'].isin(selected_agg_sectors)) &
-                (df_emissions['topic'] == "emission")
-            ].groupby(['year', 'sector', 'scen'], as_index=False)['value'].sum()
-
-            # Create a dummy 'sector' as line_group_col
-            emission_plotter = TimesReportPlotter(df_em_agg)
-            fig_emission_agg = emission_plotter.line_plot(
-                x_col="year",
-                y_col="value",
-                line_group_col="sector",  # one line per sector
-                scenario_col="scen",
-                filter_dict=None,  # already filtered/aggregated
-                title="Aggregate Emissions by Sector"
+        if df_emissions_filtered.empty:
+            st.warning("No emissions data available after applying filters.")
+        else:
+            # --- Top-level aggregate plot ---
+            st.subheader("Aggregate Emissions Plot (All Sectors)")
+            selected_agg_sectors = st.multiselect(
+                "Select sectors to include in aggregate plot",
+                options=sectors,
+                default=sectors,
+                key="emission_agg"
             )
-            if fig_emission_agg:
-                st.plotly_chart(fig_emission_agg, use_container_width=True)
-            else:
-                st.warning("No data for selected sectors in aggregate plot.")
 
-        # --- Bottom-level disaggregated plots per sector ---
-        st.subheader("Disaggregated Emission Plots per Sector")
-        for sector in sectors:
-            st.markdown(f"**{sector}**")
-            # Aggregate per comgroup per scenario for this sector
-            df_sector = df_emissions[
-                (df_emissions['sector'] == sector) &
-                (df_emissions['topic'] == "emission")
-            ].groupby(['year', 'comgroup', 'scen'], as_index=False)['value'].sum()
+            if selected_agg_sectors:
+                # Aggregate values per sector and scenario
+                df_em_agg = df_emissions_filtered[
+                    (df_emissions_filtered['sector'].isin(selected_agg_sectors)) &
+                    (df_emissions_filtered['topic'] == "emission")
+                ].groupby(['year', 'sector', 'scen'], as_index=False)['value'].sum()
 
-            if not df_sector.empty:
-                emission_plotter = TimesReportPlotter(df_sector)
-                fig_emission_sector = emission_plotter.line_plot(
-                    x_col="year",
-                    y_col="value",
-                    line_group_col="comgroup",
-                    scenario_col="scen",
-                    filter_dict=None,
-                    title=f"Emissions for {sector}"
-                )
-                st.plotly_chart(fig_emission_sector, use_container_width=True)
-            else:
-                st.warning(f"No emission data for sector {sector}.")
+                if not df_em_agg.empty:
+                    # Create a dummy 'sector' as line_group_col
+                    emission_plotter = TimesReportPlotter(df_em_agg)
+                    fig_emission_agg = emission_plotter.line_plot(
+                        x_col="year",
+                        y_col="value",
+                        line_group_col="sector",  # one line per sector
+                        scenario_col="scen",
+                        filter_dict=None,  # already filtered/aggregated
+                        title="Aggregate Emissions by Sector"
+                    )
+                    if fig_emission_agg:
+                        st.plotly_chart(fig_emission_agg, use_container_width=True)
+                    else:
+                        st.warning("No data for selected sectors in aggregate plot.")
+                else:
+                    st.warning("No data available after applying filters.")
+
+            # --- Bottom-level disaggregated plots per sector ---
+            st.subheader("Disaggregated Emission Plots per Sector")
+            for sector in sectors:
+                st.markdown(f"**{sector}**")
+                # Aggregate per comgroup per scenario for this sector
+                df_sector = df_emissions_filtered[
+                    (df_emissions_filtered['sector'] == sector) &
+                    (df_emissions_filtered['topic'] == "emission")
+                ].groupby(['year', 'comgroup', 'scen'], as_index=False)['value'].sum()
+
+                if not df_sector.empty:
+                    emission_plotter = TimesReportPlotter(df_sector)
+                    fig_emission_sector = emission_plotter.line_plot(
+                        x_col="year",
+                        y_col="value",
+                        line_group_col="comgroup",
+                        scenario_col="scen",
+                        filter_dict=None,
+                        title=f"Emissions for {sector}"
+                    )
+                    st.plotly_chart(fig_emission_sector, use_container_width=True)
+                else:
+                    st.info(f"No emission data for sector {sector} with current filters.")
 
     # ---------------------- DEVELOPMENT TAB ----------------------
     with topic_tabs[2]:
         st.header("Development")
         st.info("This section is for testing new features.")
+        
+        # Display filter information
+        st.subheader("Active Filters Debug")
+        st.write("Active filters:", active_filters)
+        st.write("Number of rows after filtering:", len(generic_filter.apply_filters(combined_df)))
+        
         try:
             st.image("images/speed-local.jpg", caption="Speed Local", use_container_width=True)
         except FileNotFoundError:
