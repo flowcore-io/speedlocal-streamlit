@@ -1,37 +1,107 @@
 import streamlit as st
 from pathlib import Path
+import pandas as pd
 from utils._query_with_csv import PandasDFCreator
 from utils._plotting import TimesReportPlotter
+from utils._query_dynamic import GenericFilter
+from utils._streamlit_ui import SidebarConfig, ST_PandasDFLoader, FilterUI
+
 
 EXCLUDED_SECTORS = ['AFO','DMZ','SYS','DHT','ELT','TRD','UPS','NA','FTS']
 
-def main(db_source: str, mapping_csv: str, is_url: bool = True):
+def main(mapping_csv: str):
     """Main Streamlit UI using preloaded Pandas DataFrames for plotting."""
     
     st.set_page_config(page_title="SpeedLocal: TIMES Data Explorer", layout="wide")
     st.title("SpeedLocal: TIMES Data Explorer (beta version) !")
 
-    # Load DataFrames
-    creator = PandasDFCreator(db_source=db_source, mapping_csv=mapping_csv, is_url=is_url)
-    dfs_dict = creator.run()
-
-    df_energy = dfs_dict.get("energy")
-    df_emissions = dfs_dict.get("emissions")
-
-    if df_energy is None or df_energy.empty:
-        st.error("Energy DataFrame is empty. Cannot display plots.")
+     # Render sidebar configuration
+    sidebar = SidebarConfig()
+    config = sidebar.render()
+    
+    # Exit if configuration is invalid
+    if not config['valid']:
         return
-    if df_emissions is None or df_emissions.empty:
-        st.error("Emissions DataFrame is empty. Cannot display plots.")
+    
+    # Handle data loading with reload logic
+    if config['reload_requested']:
+        # Clear all session state when reloading
+        for key in ['table_dfs', 'loader', 'generic_filter', 'filter_ui']:
+            if key in st.session_state:
+                del st.session_state[key]
+    
+    # Load data if not already in session state
+    if 'table_dfs' not in st.session_state:
+        loader = ST_PandasDFLoader(
+            db_source=config['db_source'],
+            mapping_csv=mapping_csv, 
+            is_url=config['is_url']
+        )
+        st.session_state['table_dfs'] = loader.load_dataframes()
+        st.session_state['loader'] = loader
+    
+    # Get data from session state
+    table_dfs = st.session_state.get('table_dfs', {})
+    loader = st.session_state.get('loader')
+    
+    # Exit if no data was loaded
+    if not table_dfs:
         return
+    
+    # Get specific tables
+    df_energy = loader.get_table("energy") if loader else table_dfs.get("energy")
+    df_emissions = loader.get_table("emissions") if loader else table_dfs.get("emissions")
 
-    # Sidebar filters
-    sectors = sorted(df_energy['sector'].unique())
-    sectors = [s for s in sectors if s not in EXCLUDED_SECTORS]
-    # selected_sector = st.sidebar.selectbox("Select sector", sectors)
-
-    scenarios = sorted(df_energy['scen'].unique())
-    selected_scenarios = st.sidebar.multiselect("Select energy scenarios", scenarios, default=scenarios[:2])
+    # Combine all DataFrames for filtering (or use a specific one)
+    # Using energy table as the base for filters, but you can combine multiple tables
+    first_table_df = None
+    if table_dfs:
+        first_table_name = list(table_dfs.keys())[0]
+        first_table_df = table_dfs[first_table_name]
+    
+    if first_table_df is None or first_table_df.empty:
+        st.error("No data available for filtering.")
+        return
+    
+    # Define filterable columns (customize based on your needs)
+    filterable_columns = ['scen', 'sector', 'subsector', 'comgroup', 'topic', 'attr', 'year']
+    
+    # Initialize GenericFilter if not in session state
+    if 'generic_filter' not in st.session_state:
+        st.session_state['generic_filter'] = GenericFilter(
+            df=first_table_df,
+            filterable_columns=filterable_columns
+        )
+    
+    generic_filter = st.session_state['generic_filter']
+    
+    # Initialize FilterUI if not in session state
+    if 'filter_ui' not in st.session_state:
+        st.session_state['filter_ui'] = FilterUI(
+            generic_filter=generic_filter,
+            default_columns=['scen'],  # Default to showing scenario filter
+            section_title="Data Filters"
+        )
+    
+    filter_ui = st.session_state['filter_ui']
+    
+    # Render filter UI and get active filters
+    active_filters = filter_ui.render()
+    
+    # Apply filters to get sectors list (excluding certain sectors)
+    if first_table_df is not None and not first_table_df.empty:
+        # Apply filters to the dataframe
+        filtered_df = generic_filter.apply_filters(first_table_df)
+        
+        if 'sector' in filtered_df.columns:
+            sectors = sorted(filtered_df['sector'].unique())
+            sectors = [s for s in sectors if s not in EXCLUDED_SECTORS]
+        else:
+            sectors = []
+            st.sidebar.warning("'sector' column not found in data.")
+    else:
+        sectors = []
+        st.sidebar.warning("No data available for filters.")
 
     # Tabs for topics
     topic_tabs = st.tabs(["Energy", "Emissions", "Development"])
@@ -153,7 +223,5 @@ def main(db_source: str, mapping_csv: str, is_url: bool = True):
 
 if __name__ == "__main__":
     main(
-        db_source="https://speedlocal.flowcore.app/api/duckdb/share/fa45bb6b7d2a92f71d53968d181f6c7b",  # Replace with actual URL or local path
-        mapping_csv="inputs/mapping_db_views.csv",  # Replace with actual path to mapping CSV
-        is_url=True
+        mapping_csv="inputs/mapping_db_views.csv"
     )

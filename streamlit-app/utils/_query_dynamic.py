@@ -2,6 +2,7 @@
 
 import pandas as pd
 import duckdb
+from typing import Dict, List, Optional, Any
 
 class DuckDBQueryHelper:
     """Reusable class for querying DuckDB database."""
@@ -120,3 +121,115 @@ class DuckDBQueryHelper:
         except Exception as e:
             print(f"Error listing tables: {e}")
             return []
+
+class GenericFilter:
+    """
+    Generic filter class for creating flexible multi-column filters.
+    Works with DataFrames to provide filtering capabilities.
+    """
+    
+    def __init__(self, df: pd.DataFrame, filterable_columns: Optional[List[str]] = None):
+        """
+        Initialize GenericFilter with a DataFrame.
+        
+        Args:
+            df: DataFrame to filter
+            filterable_columns: List of column names that can be filtered.
+                              If None, all columns are filterable.
+        """
+        self.df = df
+        self.filterable_columns = filterable_columns or list(df.columns)
+        self.active_filters: Dict[str, List[Any]] = {}
+    
+    def get_available_columns(self) -> List[str]:
+        """Get list of columns available for filtering."""
+        return [col for col in self.filterable_columns if col in self.df.columns]
+    
+    def get_unique_values(self, column: str) -> List[Any]:
+        """
+        Get unique values for a specific column.
+        
+        Args:
+            column: Column name
+            
+        Returns:
+            Sorted list of unique values
+        """
+        if column not in self.df.columns:
+            return []
+        
+        unique_vals = self.df[column].dropna().unique()
+        try:
+            return sorted(unique_vals)
+        except TypeError:
+            # If values aren't sortable, return as list
+            return list(unique_vals)
+    
+    def set_filter(self, column: str, values: List[Any]) -> None:
+        """
+        Set filter for a specific column.
+        
+        Args:
+            column: Column name to filter
+            values: List of values to filter by
+        """
+        if values:  # Only set if values list is not empty
+            self.active_filters[column] = values
+        elif column in self.active_filters:
+            # Remove filter if values list is empty
+            del self.active_filters[column]
+    
+    def remove_filter(self, column: str) -> None:
+        """Remove filter for a specific column."""
+        if column in self.active_filters:
+            del self.active_filters[column]
+    
+    def clear_filters(self) -> None:
+        """Clear all active filters."""
+        self.active_filters = {}
+    
+    def get_active_filters(self) -> Dict[str, List[Any]]:
+        """Get dictionary of currently active filters."""
+        return self.active_filters.copy()
+    
+    def apply_filters(self, df: Optional[pd.DataFrame] = None) -> pd.DataFrame:
+        """
+        Apply all active filters to DataFrame.
+        
+        Args:
+            df: DataFrame to filter. If None, uses self.df
+            
+        Returns:
+            Filtered DataFrame
+        """
+        df_to_filter = df if df is not None else self.df
+        
+        if not self.active_filters:
+            return df_to_filter.copy()
+        
+        filtered_df = df_to_filter.copy()
+        
+        for column, values in self.active_filters.items():
+            if column in filtered_df.columns and values:
+                filtered_df = filtered_df[filtered_df[column].isin(values)]
+        
+        return filtered_df
+    
+    def get_filter_summary(self) -> str:
+        """
+        Get a human-readable summary of active filters.
+        
+        Returns:
+            String description of active filters
+        """
+        if not self.active_filters:
+            return "No active filters"
+        
+        summary_parts = []
+        for column, values in self.active_filters.items():
+            value_str = ", ".join(str(v) for v in values[:3])
+            if len(values) > 3:
+                value_str += f" (+ {len(values) - 3} more)"
+            summary_parts.append(f"{column}: {value_str}")
+        
+        return " | ".join(summary_parts)
