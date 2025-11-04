@@ -5,7 +5,7 @@ import re
 import duckdb
 import pandas as pd
 from pathlib import Path
-from ._connection_functions import connect_to_db
+from utils._connection_functions import connect_to_db
 
 
 class PandasDFCreator:
