@@ -62,6 +62,77 @@ class BaseModule(ABC):
             for table in required
         )
     
+    def _get_desc_mapping(self) -> Dict[str, Dict[str, str]]:
+        """Get description mapping from session state."""
+        return st.session_state.get('desc_mapping', {})
+
+    def _get_desc_df(self) -> pd.DataFrame:
+        """Get description DataFrame from session state."""
+        return st.session_state.get('desc_df', pd.DataFrame())
+
+    def _apply_filters(self, df: pd.DataFrame, filters: Dict[str, Any]) -> pd.DataFrame:
+        """
+        Apply filters to a DataFrame.
+        
+        Args:
+            df: DataFrame to filter
+            filters: Dictionary of column -> values to filter by
+        
+        Returns:
+            Filtered DataFrame
+        """
+        df_filtered = df.copy()
+        
+        for col, values in filters.items():
+            # Skip if column doesn't exist in this DataFrame
+            if col not in df_filtered.columns:
+                continue
+            
+            # Skip if no values selected (empty list)
+            if not values:
+                continue
+            
+            # Apply filter
+            if isinstance(values, list):
+                df_filtered = df_filtered[df_filtered[col].isin(values)]
+            else:
+                # Single value
+                df_filtered = df_filtered[df_filtered[col] == values]
+    
+        return df_filtered
+
+    def _apply_descriptions(
+        self, 
+        df: pd.DataFrame, 
+        columns: list, 
+        desc_mapping: Dict[str, Dict[str, str]]
+    ) -> pd.DataFrame:
+        """
+        Add description columns to DataFrame.
+        
+        Args:
+            df: DataFrame to add descriptions to
+            columns: List of column names to map (e.g., ['sector', 'comgroup'])
+            desc_mapping: Nested dict with mappings
+        
+        Returns:
+            DataFrame with new columns: sector_desc, comgroup_desc, etc.
+        """
+        if not desc_mapping:
+            return df
+        
+        df_with_desc = df.copy()
+        
+        for col in columns:
+            if col in df_with_desc.columns and col in desc_mapping:
+                # Create new column with descriptions
+                # Falls back to original ID if description not found
+                df_with_desc[f'{col}_desc'] = df_with_desc[col].map(
+                    desc_mapping[col]
+                ).fillna(df_with_desc[col])
+        
+        return df_with_desc 
+
     def show_error(self, message: str) -> None:
         """Display error message."""
         st.error(f"[{self.name}] {message}")

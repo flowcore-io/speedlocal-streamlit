@@ -8,6 +8,8 @@ from modules.key_insights.module import KeyInsightsModule
 from modules.energy_emissions.module import EnergyEmissionsModule
 
 
+from modules.development.module import DevelopmentModule
+
 class ModuleRegistry:
     """Central registry for all app modules."""
     
@@ -28,7 +30,11 @@ class ModuleRegistry:
         # self.register_module("land_use", LandUseModule())
         # self.register_module("economics", EconomicsModule())
         # self.register_module("daynite", DayNiteModule())
-    
+
+        # Register Development module (order=999 = always last)
+        
+        self.register_module("development", DevelopmentModule())
+
     def register_module(self, key: str, module: BaseModule) -> None:
         """
         Register a new module.

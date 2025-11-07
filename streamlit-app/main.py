@@ -5,6 +5,7 @@ Refactored from times_app_test.py to support modular architecture.
 
 import streamlit as st
 from pathlib import Path
+import pandas as pd
 
 from core.session_manager import SessionManager
 from core.data_loader import DataLoaderManager
@@ -47,6 +48,7 @@ def main():
         session_mgr.clear_pattern('data')
         session_mgr.clear_pattern('filter')
         session_mgr.clear_pattern('loader')
+        session_mgr.clear_pattern('desc')
         st.rerun()
     
     # Initialize data loader if not in session
@@ -65,8 +67,17 @@ def main():
             st.error("Failed to load data. Please check your database connection.")
             st.stop()
         
+        # Load description tables
+        with st.spinner("Loading description tables..."):
+            from core.data_loader import create_description_mapping
+            desc_df = data_loader.load_description_tables()
+            desc_mapping = create_description_mapping(desc_df)
+        
+        # Store in session
         session_mgr.set('data_loader', data_loader)
         session_mgr.set('table_dfs', table_dfs)
+        session_mgr.set('desc_df', desc_df)
+        session_mgr.set('desc_mapping', desc_mapping)
     
     # Get data from session
     table_dfs = session_mgr.get('table_dfs', {})
@@ -101,11 +112,19 @@ def main():
     tabs = st.tabs(module_names)
     
     # Render each module in its tab
+    # Get description data from session
+    desc_df = session_mgr.get('desc_df', pd.DataFrame())
+    desc_mapping = session_mgr.get('desc_mapping', {})
+
+    # Render each module in its tab
     for tab, (module_key, module) in zip(tabs, enabled_modules.items()):
         with tab:
             try:
                 # Get module-specific filter config
                 filter_config = module.get_filter_config()
+                
+                # Check if module wants global filters applied
+                apply_global = filter_config.get('apply_global_filters', True)
                 
                 # Render module-specific filters (if any)
                 module_filters = {}
@@ -116,10 +135,13 @@ def main():
                             filter_config
                         )
                 
-                # Combine global and module filters
-                combined_filters = {**global_filters, **module_filters}
+                # Decide which filters to pass
+                if apply_global:
+                    combined_filters = {**global_filters, **module_filters}
+                else:
+                    combined_filters = module_filters
                 
-                # Render the module
+                # Render the module (now with description data)
                 module.render(table_dfs, combined_filters, data_loader)
                 
             except Exception as e:

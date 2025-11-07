@@ -29,6 +29,7 @@ class KeyInsightsModule(BaseModule):
     
     def get_filter_config(self) -> Dict[str, Any]:
         return {
+            "apply_global_filters": False,
             "show_module_filters": False,
             "filterable_columns": ['scen', 'year'],
             "default_columns": []
@@ -44,25 +45,6 @@ class KeyInsightsModule(BaseModule):
         
         st.header("Key Modelling Insights")
         st.info("This section provides high-level insights for stakeholders.")
-        
-        # Get filter manager
-        sys.path.append(str(Path(__file__).parent.parent.parent / "core"))
-        from filter_manager import FilterManager
-        
-        filter_manager = FilterManager(table_dfs)
-        generic_filter = filter_manager.get_generic_filter()
-        
-        # Filter debug info (from Development tab)
-        with st.expander("🔍 Filter Debug Information", expanded=False):
-            active_filters = generic_filter.get_active_filters()
-            st.write("**Active filters:**", active_filters)
-            
-            combined_df = pd.concat([df for df in table_dfs.values() if not df.empty], ignore_index=True)
-            filtered_df = generic_filter.apply_filters(combined_df)
-            st.write(f"**Number of rows after filtering:** {len(filtered_df)}")
-            
-            # Show available tables
-            st.write("**Available tables:**", list(table_dfs.keys()))
         
         # Placeholder metrics
         st.markdown("---")

@@ -12,6 +12,8 @@ from pathlib import Path
 import sys
 sys.path.append(str(Path(__file__).parent.parent / "utils"))
 from _query_with_csv import PandasDFCreator
+from _connection_functions import connect_to_db
+from _query_dynamic import DuckDBQueryHelper
 
 
 class DataLoaderManager:
@@ -104,3 +106,68 @@ class DataLoaderManager:
     def get_loaded_table_names(self) -> list:
         """Get list of successfully loaded table names."""
         return [name for name, df in self.table_dfs.items() if not df.empty]
+
+    def load_description_tables(self) -> pd.DataFrame:
+        """
+        Extract description tables from database and deduplicate.
+        
+        Returns:
+            DataFrame with columns: set_name, element, description
+        """
+        try:
+            # Connect to database
+            conn = connect_to_db(
+                source=self.creator.db_source,
+                is_url=self.creator.is_url,
+                use_cache=True
+            )
+            
+            if conn is None:
+                st.warning("Failed to connect to database for description tables.")
+                return pd.DataFrame()
+            
+            # Extract description tables
+            query_helper = DuckDBQueryHelper(conn)
+            desc_data = query_helper.extract_desc_tables()
+            
+            # Close connection
+            conn.close()
+            
+            if not desc_data:
+                return pd.DataFrame()
+            
+            # Convert to DataFrame and deduplicate
+            desc_df = pd.DataFrame(desc_data)
+            desc_df = desc_df.drop_duplicates(subset=['set_name', 'element', 'description'])
+            
+            return desc_df
+            
+        except Exception as e:
+            st.warning(f"Could not load description tables: {str(e)}")
+            return pd.DataFrame()
+
+def create_description_mapping(desc_df: pd.DataFrame) -> Dict[str, Dict[str, str]]:
+    """
+    Create nested dictionary mapping from description DataFrame.
+    
+    Args:
+        desc_df: DataFrame with columns [set_name, element, description]
+    
+    Returns:
+        Nested dict like: {'sector': {'TRA': 'Transport', ...}, 'comgroup': {...}}
+    """
+    if desc_df.empty:
+        return {}
+    
+    mapping = {}
+    
+    # Group by set_name (e.g., 'sector_desc', 'comgroup_desc')
+    for set_name, group in desc_df.groupby('set_name'):
+        # Remove '_desc' suffix to get column name
+        # 'sector_desc' -> 'sector'
+        column_name = set_name.replace('_desc', '')
+        
+        # Create mapping: element -> description
+        mapping[column_name] = dict(zip(group['element'], group['description']))
+    
+    return mapping
