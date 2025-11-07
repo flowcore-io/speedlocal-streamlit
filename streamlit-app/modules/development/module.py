@@ -54,7 +54,7 @@ class DevelopmentModule(BaseModule):
         
         # Get description data from session
         desc_df = self._get_desc_df()
-
+        
         # Create two main sections
         debug_tab, desc_tab = st.tabs(["🔍 Filter Debug", "📋 Description Tables"])
         

@@ -128,6 +128,7 @@ class EnergyEmissionsModule(BaseModule):
         # Aggregate plot
         st.subheader("Aggregate Energy Plot (All Sectors)")
 
+
         selected_agg_sectors = st.multiselect(
             "Select sectors to include in aggregate plot",
             options=sectors,
