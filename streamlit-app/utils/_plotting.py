@@ -55,6 +55,30 @@ class TimesReportPlotter:
                     df = df[df[col] == val]
         return df
 
+    def plot(self, method: str, **kwargs) -> Optional[go.Figure]:
+        """
+        Dynamically call plotting method by name.
+        
+        Args:
+            method: Name of the plotting method ('stacked_bar', 'line_plot', etc.)
+            **kwargs: All arguments to pass to the plotting method
+            
+        Returns:
+            Plotly figure or None
+            
+        Raises:
+            ValueError: If method name is not recognized
+        """
+        if not hasattr(self, method):
+            available = [m for m in dir(self) if not m.startswith('_') and callable(getattr(self, m))]
+            raise ValueError(
+                f"Unknown plot method: '{method}'. "
+                f"Available methods: {', '.join(available)}"
+            )
+        
+        plot_func = getattr(self, method)
+        return plot_func(**kwargs)
+
     def stacked_bar(
         self,
         x_col: str,
@@ -110,7 +134,7 @@ class TimesReportPlotter:
         self,
         x_col: str,
         y_col: str,
-        line_group_col: str,
+        group_col: str,
         scenario_col: Optional[str] = None,
         filter_dict: Optional[Dict[str, Union[str, List[str]]]] = None,
         title: str = "Line Chart",
@@ -121,13 +145,13 @@ class TimesReportPlotter:
         if df.empty:
             return None
 
-        color_map = self._get_color_map(line_group_col)
+        color_map = self._get_color_map(group_col)
         scenarios = sorted(df[scenario_col].unique()) if scenario_col else [None]
 
         fig = go.Figure()
         for scen in scenarios:
-            for grp in sorted(df[line_group_col].unique()):
-                scen_data = df[(df[scenario_col]==scen) & (df[line_group_col]==grp)] if scenario_col else df[df[line_group_col]==grp]
+            for grp in sorted(df[group_col].unique()):
+                scen_data = df[(df[scenario_col]==scen) & (df[group_col]==grp)] if scenario_col else df[df[group_col]==grp]
                 if not scen_data.empty:
                     fig.add_trace(go.Scatter(
                         x=scen_data[x_col],
@@ -135,7 +159,8 @@ class TimesReportPlotter:
                         mode='lines+markers',
                         name=f"{grp} - {scen}" if scen else grp,
                         line=dict(color=color_map.get(grp)),
-                        marker=dict(size=6)
+                        marker=dict(size=6),
+                        showlegend=True
                     ))
 
         fig.update_layout(

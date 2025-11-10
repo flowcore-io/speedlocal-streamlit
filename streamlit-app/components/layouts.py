@@ -1,6 +1,6 @@
 """
-Reusable component for aggregate/disaggregate sector analysis layout.
-Displays an aggregate plot (all sectors) and disaggregated plots (per sector).
+Reusable layout components for data visualization.
+Contains common layout patterns used across multiple modules.
 """
 
 import streamlit as st
@@ -14,7 +14,7 @@ sys.path.append(str(Path(__file__).parent.parent))
 from _plotting import TimesReportPlotter
 
 
-def render_agg_disagg_layout(
+def agg_disagg_layout(
     df: pd.DataFrame,
     sectors: List[str],
     config: Dict[str, str],
@@ -55,34 +55,29 @@ def render_agg_disagg_layout(
         # Filter for selected sectors
         df_agg = df[df['sector'].isin(selected_agg_sectors)]
         
+        # Aggregate data by year, scenario, and grouping column
+        df_agg = df_agg.groupby(
+            ['year', 'scen', config['group_col_aggregate']], 
+            as_index=False
+        )['value'].sum()
+
         if not df_agg.empty:
             plotter = TimesReportPlotter(df_agg)
             
-            # Create plot based on method
-            if config['plot_method'] == 'stacked_bar':
-                fig = plotter.stacked_bar(
-                    x_col="year",
-                    y_col="value",
-                    group_col=config['group_col_aggregate'],
-                    scenario_col="scen",
-                    filter_dict=None,
-                    title=f"Aggregate {config['title']}"
-                )
-            elif config['plot_method'] == 'line_plot':
-                fig = plotter.line_plot(
-                    x_col="year",
-                    y_col="value",
-                    line_group_col=config['group_col_aggregate'],
-                    scenario_col="scen",
-                    filter_dict=None,
-                    title=f"Aggregate {config['title']}"
-                )
-            else:
-                st.error(f"Unknown plot method: {config['plot_method']}")
-                return
+            # Replace the if/elif block with single plot call
+            fig = plotter.plot(
+                method=config['plot_method'],
+                x_col="year",
+                y_col="value",
+                group_col=config['group_col_aggregate'],
+                scenario_col="scen",
+                filter_dict=None,
+                title=f"Aggregate {config['title']}",
+                height=600
+            )
             
             if fig:
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, use_container_width=True, key=f"{section_key}_agg_chart")
         else:
             st.warning("No data available for selected sectors.")
     
@@ -90,39 +85,33 @@ def render_agg_disagg_layout(
     st.subheader(f"Disaggregated {config['title']} per Sector")
     
     for sector in sectors:
-        # Get readable sector name for expander
         sector_display = desc_mapping.get('sector', {}).get(sector, sector) if desc_mapping else sector
         
         with st.expander(f"**{sector_display} ({sector})**", expanded=False):
             df_sector = df[df['sector'] == sector]
             
+            # Aggregate data by year, scenario, and grouping column
+            df_sector = df_sector.groupby(
+                ['year', 'scen', config['group_col_disaggregate']], 
+                as_index=False
+            )['value'].sum()
+            
             if not df_sector.empty:
                 plotter = TimesReportPlotter(df_sector)
                 
-                # Create plot based on method
-                if config['plot_method'] == 'stacked_bar':
-                    fig = plotter.stacked_bar(
-                        x_col="year",
-                        y_col="value",
-                        group_col=config['group_col_disaggregate'],
-                        scenario_col="scen",
-                        filter_dict=None,
-                        title=f"{config['title']} for {sector_display}"
-                    )
-                elif config['plot_method'] == 'line_plot':
-                    fig = plotter.line_plot(
-                        x_col="year",
-                        y_col="value",
-                        line_group_col=config['group_col_disaggregate'],
-                        scenario_col="scen",
-                        filter_dict=None,
-                        title=f"{config['title']} for {sector_display}"
-                    )
-                else:
-                    st.error(f"Unknown plot method: {config['plot_method']}")
-                    continue
+                # Replace the if/elif block with single plot call
+                fig = plotter.plot(
+                    method=config['plot_method'],
+                    x_col="year",
+                    y_col="value",
+                    group_col=config['group_col_disaggregate'],
+                    scenario_col="scen",
+                    filter_dict=None,
+                    title=f"{config['title']} for {sector_display}",
+                    height=600
+                )
                 
                 if fig:
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, use_container_width=True, key=f"{section_key}_disagg_{sector}")
             else:
                 st.info(f"No data available for sector {sector}")
