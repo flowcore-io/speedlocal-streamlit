@@ -23,7 +23,7 @@ class EnergyEmissionsModule_refactor(BaseModule):
     """Energy and Emissions visualization module."""
     
     # Sectors to exclude
-    EXCLUDED_SECTORS = ['AFO', 'DMZ', 'SYS', 'DHT', 'ELT', 'TRD', 'UPS', 'NA', 'FTS']
+    EXCLUDED_SECTORS = ['DMZ', 'SYS', 'DHT', 'ELT', 'TRD', 'UPS', 'NA', 'FTS']
     
     # Configuration for each section
     SECTION_CONFIGS = {

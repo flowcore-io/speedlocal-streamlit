@@ -22,7 +22,7 @@ class EnergyEmissionsModule(BaseModule):
     """Energy and Emissions visualization module."""
     
     # Sectors to exclude (from original EXCLUDED_SECTORS)
-    EXCLUDED_SECTORS = ['AFO', 'DMZ', 'SYS', 'DHT', 'ELT', 'TRD', 'UPS', 'NA', 'FTS']
+    EXCLUDED_SECTORS = ['DMZ', 'SYS', 'DHT', 'ELT', 'TRD', 'UPS', 'NA', 'FTS']
     
     def __init__(self):
         super().__init__(
