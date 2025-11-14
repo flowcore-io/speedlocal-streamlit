@@ -17,6 +17,12 @@ from components.sidebar import render_sidebar
 def main():
     """Main Streamlit application entry point."""
     
+    # Debug: Check if main is called multiple times
+    if 'main_call_count' not in st.session_state:
+        st.session_state.main_call_count = 0
+    st.session_state.main_call_count += 1
+    print(f"DEBUG: main() called {st.session_state.main_call_count} times")
+
     # Page configuration
     st.set_page_config(
         page_title="SpeedLocal: TIMES Data Explorer",
@@ -94,12 +100,6 @@ def main():
     
     filter_manager = session_mgr.get('filter_manager')
     
-    # Render global filters in sidebar
-    with st.sidebar:
-        st.markdown("---")
-        st.subheader("Global Filters")
-        global_filters = filter_manager.render_global_filters()
-    
     # Get enabled modules
     enabled_modules = module_registry.get_enabled_modules()
     
@@ -109,22 +109,41 @@ def main():
     
     # Create tabs for each enabled module
     module_names = [module.name for module in enabled_modules.values()]
+    module_keys = list(enabled_modules.keys())
+
+    # Initialize active module tracking BEFORE rendering anything
+    if 'active_module_key' not in st.session_state:
+        st.session_state.active_module_key = module_keys[0]
+
+    # Render global filters in sidebar
+    with st.sidebar:
+        st.markdown("---")
+        st.subheader("Global Filters")
+
+        global_filters = filter_manager.render_global_filters()
+
+    # Create tabs
     tabs = st.tabs(module_names)
-    
-    # Render each module in its tab
-    # Get description data from session
-    desc_df = session_mgr.get('desc_df', pd.DataFrame())
-    desc_mapping = session_mgr.get('desc_mapping', {})
 
     # Render each module in its tab
     for tab, (module_key, module) in zip(tabs, enabled_modules.items()):
         with tab:
+            # This tab's content only executes when it's active
+            # Update active module key for THIS render
+            st.session_state.active_module_key = module_key
+            
             try:
                 # Get module-specific filter config
                 filter_config = module.get_filter_config()
                 
                 # Check if module wants global filters applied
                 apply_global = filter_config.get('apply_global_filters', True)
+                
+                # Render MODULE-SPECIFIC unit filter (inside the tab, not sidebar)
+                unit_filter = filter_manager.render_unit_filter(
+                    module_key,
+                    table_dfs
+                )
                 
                 # Render module-specific filters (if any)
                 module_filters = {}
@@ -135,14 +154,18 @@ def main():
                             filter_config
                         )
                 
+                # Combine filters
+                if unit_filter:
+                    module_filters['unit'] = [unit_filter]
+                
                 # Decide which filters to pass
                 if apply_global:
                     combined_filters = {**global_filters, **module_filters}
                 else:
                     combined_filters = module_filters
                 
-                # Render the module (now with description data)
-                module.render(table_dfs, combined_filters, data_loader)
+                # Render the module
+                module.render(table_dfs, combined_filters)
                 
             except Exception as e:
                 st.error(f"Error rendering {module.name}: {str(e)}")

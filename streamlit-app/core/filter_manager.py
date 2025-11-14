@@ -151,3 +151,72 @@ class FilterManager:
             Filtered DataFrame
         """
         return self.generic_filter.apply_filters(df)
+
+    def render_unit_filter(self, module_key: str, table_dfs: Dict[str, pd.DataFrame]) -> Optional[str]:
+        """
+        Render unit filter for active module's tables.
+        
+        Args:
+            module_key: Active module identifier
+            table_dfs: All available tables
+            
+        Returns:
+            Selected unit string or None
+        """
+        # Get module's required tables from registry
+        registry = st.session_state.get('module_registry')
+        if not registry:
+            return None
+        
+        try:
+            module = registry.get_module(module_key)
+            required_tables = module.get_required_tables()
+        except KeyError:
+            return None
+        
+        # If no required tables, use all tables
+        if not required_tables:
+            tables_to_check = list(table_dfs.keys())
+        else:
+            tables_to_check = required_tables
+        
+        # Extract unique units from relevant tables
+        available_units = []
+        for table_name in tables_to_check:
+            if table_name in table_dfs:
+                df = table_dfs[table_name]
+                if 'unit' in df.columns:
+                    units = df['unit'].dropna().unique().tolist()
+                    available_units.extend(units)
+        
+        # Remove duplicates while preserving order
+        available_units = list(dict.fromkeys(available_units))
+        
+        # Only show filter if units exist
+        if not available_units:
+            return None
+        
+        # Get previous selection for this module (if any)
+        session_key = f"unit_filter_{module_key}"
+        if session_key not in st.session_state:
+            st.session_state[session_key] = available_units[0]
+        
+        # Reset to first unit if previously selected unit no longer available
+        if st.session_state[session_key] not in available_units:
+            st.session_state[session_key] = available_units[0]
+        
+        # Get current index
+        try:
+            current_index = available_units.index(st.session_state[session_key])
+        except ValueError:
+            current_index = 0
+        
+        selected_unit = st.selectbox(
+            "Unit Filter",
+            options=available_units,
+            index=current_index,
+            key=session_key,
+            help="Filter data by measurement unit"
+        )
+        
+        return selected_unit

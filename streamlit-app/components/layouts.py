@@ -41,7 +41,7 @@ def agg_disagg_layout(
         return
     
     # --- AGGREGATE PLOT ---
-    st.subheader(f"Aggregate {config['title']} (All Sectors)")
+    st.subheader(f"Compiled (All Sectors)")
     
     selected_agg_sectors = st.multiselect(
         "Select sectors to include in aggregate plot",
@@ -55,11 +55,18 @@ def agg_disagg_layout(
         # Filter for selected sectors
         df_agg = df[df['sector'].isin(selected_agg_sectors)]
         
+        # Get the unit before aggregation
+        unit = df_agg['unit'].dropna().iloc[0] if 'unit' in df_agg.columns and not df_agg['unit'].dropna().empty else None
+     
         # Aggregate data by year, scenario, and grouping column
         df_agg = df_agg.groupby(
             ['year', 'scen', config['group_col_aggregate']], 
             as_index=False
         )['value'].sum()
+
+        # Add unit column back
+        if unit:
+            df_agg['unit'] = unit
 
         if not df_agg.empty:
             plotter = TimesReportPlotter(df_agg)
@@ -82,20 +89,27 @@ def agg_disagg_layout(
             st.warning("No data available for selected sectors.")
     
     # --- DISAGGREGATED PLOTS PER SECTOR ---
-    st.subheader(f"Disaggregated {config['title']} per Sector")
-    
+    st.subheader(f"Disaggregated per Sector")
+    # st.subheader(f"Disaggregated {config['title']} per Sector")
     for sector in sectors:
         sector_display = desc_mapping.get('sector', {}).get(sector, sector) if desc_mapping else sector
         
         with st.expander(f"**{sector_display} ({sector})**", expanded=False):
             df_sector = df[df['sector'] == sector]
             
+            # Get the unit before aggregation
+            unit = df_sector['unit'].dropna().iloc[0] if 'unit' in df_sector.columns and not df_sector['unit'].dropna().empty else None
+
             # Aggregate data by year, scenario, and grouping column
             df_sector = df_sector.groupby(
                 ['year', 'scen', config['group_col_disaggregate']], 
                 as_index=False
             )['value'].sum()
-            
+
+            # Add unit column back
+            if unit:
+                df_sector['unit'] = unit
+
             if not df_sector.empty:
                 plotter = TimesReportPlotter(df_sector)
                 

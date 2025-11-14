@@ -92,6 +92,9 @@ class TimesReportPlotter:
         if df.empty:
             return None
 
+        # Detect unit from data
+        unit = df['unit'].dropna().iloc[0] if 'unit' in df.columns and not df['unit'].dropna().empty else None
+
         groups = sorted(df[group_col].unique())
         color_map = self._get_color_map(group_col)
         x_values = sorted(df[x_col].unique())
@@ -120,7 +123,7 @@ class TimesReportPlotter:
             barmode='stack',
             title=title,
             xaxis_title=x_col,
-            yaxis_title=y_col,
+            yaxis_title=unit if unit else y_col,
             height=height,
             bargap=0,
             bargroupgap=0.1
@@ -143,6 +146,10 @@ class TimesReportPlotter:
         if df.empty:
             return None
 
+        # Detect unit from data
+        unit = df['unit'].dropna().iloc[0] if 'unit' in df.columns and not df['unit'].dropna().empty else None
+        print(f"DEBUG: Detected unit = {unit}, df shape = {df.shape}")  # Add this line
+
         color_map = self._get_color_map(group_col)
         scenarios = sorted(df[scenario_col].unique()) if scenario_col else [None]
 
@@ -164,7 +171,7 @@ class TimesReportPlotter:
         fig.update_layout(
             title=title,
             xaxis_title=x_col,
-            yaxis_title=y_col,
+            yaxis_title=unit if unit else y_col,
             height=height
         )
         return fig

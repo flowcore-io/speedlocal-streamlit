@@ -42,8 +42,7 @@ class DevelopmentModule(BaseModule):
     def render(
         self,
         table_dfs: Dict[str, pd.DataFrame],
-        filters: Dict[str, Any],
-        data_loader: Any
+        filters: Dict[str, Any]
     ) -> None:
         """Render Key Insights dashboard."""
         

@@ -36,8 +36,7 @@ class BaseModule(ABC):
     def render(
         self, 
         table_dfs: Dict[str, pd.DataFrame], 
-        filters: Dict[str, Any],
-        data_loader: Any
+        filters: Dict[str, Any]
     ) -> None:
         """
         Main render method for the module.
