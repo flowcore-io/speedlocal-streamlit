@@ -6,13 +6,12 @@ from typing import Optional, Dict, List, Union
 class TimesReportPlotter:
     """
     Generic plotting class using pre-loaded DataFrames, but dynamically
-    validates filters/grouping columns using DuckDBQueryHelper.
+
     """
 
     def __init__(
         self,
-        df: pd.DataFrame,
-        query_helper: Optional["DuckDBQueryHelper"] = None
+        df: pd.DataFrame
     ):
         """
         Args:
@@ -22,7 +21,6 @@ class TimesReportPlotter:
         if df.empty:
             raise ValueError("DataFrame is empty.")
         self.df = df.copy()
-        self.query_helper = query_helper
         self.color_maps = {}
 
     def _get_color_map(self, group_col: str) -> Dict[str, str]:

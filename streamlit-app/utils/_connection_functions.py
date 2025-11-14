@@ -39,11 +39,11 @@ def connect_to_db(source, is_url=False, use_cache=True, message_callback=None, p
             message_callback("error", f"Error connecting to database: {str(e)}")
         return None
 
-def msg(level, text):
-    print(f"[{level.upper()}] {text}")
+# def msg(level, text):
+#     print(f"[{level.upper()}] {text}")
 
-def progress(progress, text):
-    print(f"Progress: {progress*100:.1f}% - {text}")
+# def progress(progress, text):
+#     print(f"Progress: {progress*100:.1f}% - {text}")
 
 def check_azure_url_expiry(url):
     """
