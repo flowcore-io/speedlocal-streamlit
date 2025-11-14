@@ -1,4 +1,3 @@
 table,label,model,scen,sector,subsector,service,techgroup,comgroup,topic,attr,prc,com,all_ts,regfrom,regto,year
-energy,sector,,,,,,,,.*rgy,,,,ANNUAL,,,
-emissions,,,,HOU,,,,"ENV_CO2F,ENV_CO2P",emission,f_out,,,ANNUAL,,,
-emissions,sector,,,"EDH,IND,TRA,AFO",,,,"ENV_CO2F,ENV_CO2P",emission,f_out,,,ANNUAL,,,
+energy,sector,,,,,,,,energy,,,,ANNUAL,,,
+emissions,sector,,,"HOU,EDH,IND,TRA,AFO",,,,"ENV_CO2F,ENV_CO2P",emission,f_out,,,ANNUAL,,,

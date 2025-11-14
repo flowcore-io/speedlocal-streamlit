@@ -26,7 +26,7 @@ emissions,,sector,,Industry,,,,ENV_CO2F,emission,f_out,,,ANNUAL,,,,
 ,,,,,,,,,,,,,,,,,
 ,,,,,,,,,,,,,,,,,
 2. Multiple OR values in one cell,,,,,,,,,,,,,,,,,
-Base or HighCO2 scenarios, for either Industry or Transport,,,,,,,,,,,,,,,,
+Base or HighCO2 scenarios for either Industry or Transport,,,,,,,,,,,,,,,,,
 emissions,,,Base,Industry,,,,,,,,,,,,,scen
 emissions,,,HighCO2,Transport,,,,,,,,,,,,,scen
 ,,,,,,,,,,,,,,,,,
