@@ -1,0 +1,19 @@
+unit_long,from_unit,to_unit,factor,category
+ton,t,kt,1,mass
+ton,t,t,1,mass
+kiloton,kt,t,1000,mass
+kiloton,kt,kt,1,mass
+kilogram,kg,t,1,mass
+kilogram,kg,kt,0.000001,mass
+DKK,DKK,EUR,134,currency
+DKK,DKK,USD,145,currency
+DKK,DKK,DKK,1,currency
+EUR,EUR,DKK,7.46,currency
+EUR,EUR,EUR,1,currency
+USD,USD,DKK,6.9,currency
+USD,USD,USD,1,currency
+terajoules,TJ,TJ,1,energy
+kilometer,km,km,1,length
+thousand hectares,KHA,KHA,1,area
+million cubic meters,MM3,MM3,1,volume
+roundtrips,roundtrips,roundtrips,1,transport

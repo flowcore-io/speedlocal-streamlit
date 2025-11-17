@@ -92,8 +92,17 @@ class TimesReportPlotter:
         if df.empty:
             return None
 
-        # Detect unit from data
-        unit = df['unit'].dropna().iloc[0] if 'unit' in df.columns and not df['unit'].dropna().empty else None
+        # Detect units from data (may be multiple after conversion)
+        if 'unit' in df.columns:
+            units = df['unit'].dropna().unique()
+            if len(units) == 1:
+                unit_label = units[0]
+            elif len(units) > 1:
+                unit_label = ", ".join(sorted(units))
+            else:
+                unit_label = y_col
+        else:
+            unit_label = y_col
 
         groups = sorted(df[group_col].unique())
         color_map = self._get_color_map(group_col)
@@ -123,13 +132,14 @@ class TimesReportPlotter:
             barmode='stack',
             title=title,
             xaxis_title=x_col,
-            yaxis_title=unit if unit else y_col,
+            yaxis_title=unit_label,  # ← Updated to show unit(s)
             height=height,
             bargap=0,
             bargroupgap=0.1
         )
         fig.update_xaxes(tickmode='array', tickvals=x_values, ticktext=x_values)
         return fig
+
 
     def line_plot(
         self,
@@ -146,9 +156,17 @@ class TimesReportPlotter:
         if df.empty:
             return None
 
-        # Detect unit from data
-        unit = df['unit'].dropna().iloc[0] if 'unit' in df.columns and not df['unit'].dropna().empty else None
-        print(f"DEBUG: Detected unit = {unit}, df shape = {df.shape}")  # Add this line
+        # Detect units from data (may be multiple after conversion)
+        if 'unit' in df.columns:
+            units = df['unit'].dropna().unique()
+            if len(units) == 1:
+                unit_label = units[0]
+            elif len(units) > 1:
+                unit_label = ", ".join(sorted(units))
+            else:
+                unit_label = y_col
+        else:
+            unit_label = y_col
 
         color_map = self._get_color_map(group_col)
         scenarios = sorted(df[scenario_col].unique()) if scenario_col else [None]
@@ -171,7 +189,7 @@ class TimesReportPlotter:
         fig.update_layout(
             title=title,
             xaxis_title=x_col,
-            yaxis_title=unit if unit else y_col,
+            yaxis_title=unit_label,  # ← Updated to show unit(s)
             height=height
         )
         return fig

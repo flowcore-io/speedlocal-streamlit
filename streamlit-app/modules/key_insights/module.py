@@ -30,6 +30,8 @@ class KeyInsightsModule(BaseModule):
     def get_filter_config(self) -> Dict[str, Any]:
         return {
             "apply_global_filters": False,
+            "apply_unit_conversion": True,  # ← Enable unit conversion
+            "default_unit_categories": ['energy','mass'],
             "show_module_filters": False,
             "filterable_columns": ['scen', 'year'],
             "default_columns": []

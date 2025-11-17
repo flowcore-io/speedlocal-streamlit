@@ -34,6 +34,8 @@ class DevelopmentModule(BaseModule):
     def get_filter_config(self) -> Dict[str, Any]:
         return {
             "apply_global_filters": True,
+            "apply_unit_conversion": False,
+            "default_unit_categories": ['energy','mass'],  
             "show_module_filters": False,
             "filterable_columns": ['scen', 'year'],
             "default_columns": []

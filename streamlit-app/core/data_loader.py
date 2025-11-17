@@ -145,6 +145,40 @@ class DataLoaderManager:
         except Exception as e:
             st.warning(f"Could not load description tables: {str(e)}")
             return pd.DataFrame()
+    def load_unit_conversions(self, conversions_csv: str = "inputs/unit_conversions.csv") -> pd.DataFrame:
+        """
+        Load unit conversion table.
+        
+        Args:
+            conversions_csv: Path to unit conversions CSV file
+            
+        Returns:
+            DataFrame with conversion rules
+        """
+        try:
+            from pathlib import Path
+            csv_path = Path(conversions_csv)
+            
+            if not csv_path.exists():
+                st.warning(f"Unit conversions file not found: {conversions_csv}")
+                return pd.DataFrame()
+            
+            conversions_df = pd.read_csv(csv_path)
+            
+            # Validate required columns
+            required_cols = ['unit_long', 'from_unit', 'to_unit', 'factor', 'category']
+            missing_cols = [col for col in required_cols if col not in conversions_df.columns]
+            
+            if missing_cols:
+                st.error(f"Unit conversions CSV missing columns: {missing_cols}")
+                return pd.DataFrame()
+            
+            st.sidebar.success(f"✓ Loaded {len(conversions_df)} unit conversion rules")
+            return conversions_df
+            
+        except Exception as e:
+            st.warning(f"Could not load unit conversions: {str(e)}")
+            return pd.DataFrame()
 
 def create_description_mapping(desc_df: pd.DataFrame) -> Dict[str, Dict[str, str]]:
     """

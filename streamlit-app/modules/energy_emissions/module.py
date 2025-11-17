@@ -23,7 +23,7 @@ class EnergyEmissionsModule(BaseModule):
     """Energy and Emissions visualization module."""
     
     # Sectors to exclude
-    EXCLUDED_SECTORS = ['DMZ', 'DHT', 'ELT', 'TRD', 'UPS', 'NA', 'FTS']
+    EXCLUDED_SECTORS = ['DMZ', 'DHT', 'ELT', 'TRD', 'UPS', 'NA', 'FTS', 'SYS']
     
     # Configuration for each section
     SECTION_CONFIGS = {
@@ -60,6 +60,8 @@ class EnergyEmissionsModule(BaseModule):
         return {
             "apply_global_filters": True,
             "show_module_filters": False,
+            "apply_unit_conversion": True,  # ← Enable unit conversion
+            "default_unit_categories": ['energy','mass'],  # ← Default to mass category
             "filterable_columns": ['sector', 'subsector', 'comgroup', 'year'],
             "default_columns": []
         }

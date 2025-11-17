@@ -152,27 +152,36 @@ class FilterManager:
         """
         return self.generic_filter.apply_filters(df)
 
-    def render_unit_filter(self, module_key: str, table_dfs: Dict[str, pd.DataFrame]) -> Optional[str]:
+    def get_active_unit_categories(
+        self, 
+        module_key: str, 
+        table_dfs: Dict[str, pd.DataFrame]
+    ) -> List[str]:
         """
-        Render unit filter for active module's tables.
+        Get list of unit categories present in the active module's data.
         
         Args:
             module_key: Active module identifier
             table_dfs: All available tables
             
         Returns:
-            Selected unit string or None
+            List of category names found in the data
         """
+        # Get unit converter from session
+        converter = st.session_state.get('unit_converter')
+        if not converter:
+            return []
+        
         # Get module's required tables from registry
         registry = st.session_state.get('module_registry')
         if not registry:
-            return None
+            return []
         
         try:
             module = registry.get_module(module_key)
             required_tables = module.get_required_tables()
         except KeyError:
-            return None
+            return []
         
         # If no required tables, use all tables
         if not required_tables:
@@ -180,43 +189,107 @@ class FilterManager:
         else:
             tables_to_check = required_tables
         
-        # Extract unique units from relevant tables
-        available_units = []
+        # Extract unique categories from relevant tables
+        categories = set()
+        
         for table_name in tables_to_check:
             if table_name in table_dfs:
                 df = table_dfs[table_name]
                 if 'unit' in df.columns:
-                    units = df['unit'].dropna().unique().tolist()
-                    available_units.extend(units)
+                    units = df['unit'].dropna().unique()
+                    for unit in units:
+                        category = converter.get_category(unit)
+                        if category:
+                            categories.add(category)
         
-        # Remove duplicates while preserving order
-        available_units = list(dict.fromkeys(available_units))
+        return sorted(list(categories))
+
+
+    def render_unit_configuration(
+        self,
+        active_categories: List[str],
+        module_key: str,
+        default_categories: List[str] = None
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Render unit configuration controls in sidebar.
         
-        # Only show filter if units exist
-        if not available_units:
+        Args:
+            active_categories: List of categories available in current module
+            module_key: Active module identifier (for unique keys)
+            default_categories: Default categories to select
+            
+        Returns:
+            Dict with 'selected_categories' and 'target_units' or None
+        """
+        if not active_categories:
             return None
         
-        # Get previous selection for this module (if any)
-        session_key = f"unit_filter_{module_key}"
-        if session_key not in st.session_state:
-            st.session_state[session_key] = available_units[0]
+        # Get unit converter
+        converter = st.session_state.get('unit_converter')
+        if not converter:
+            return None
         
-        # Reset to first unit if previously selected unit no longer available
-        if st.session_state[session_key] not in available_units:
-            st.session_state[session_key] = available_units[0]
+        # Set defaults
+        if default_categories is None:
+            default_categories = ['energy', 'mass']
         
-        # Get current index
-        try:
-            current_index = available_units.index(st.session_state[session_key])
-        except ValueError:
-            current_index = 0
+        # Filter defaults to only include available categories
+        default_categories = [cat for cat in default_categories if cat in active_categories]
         
-        selected_unit = st.selectbox(
-            "Unit Filter",
-            options=available_units,
-            index=current_index,
-            key=session_key,
-            help="Filter data by measurement unit"
+        # Session key for category selection
+        session_key_cat = f"unit_categories_{module_key}"
+        
+        # Initialize with defaults if first time
+        if session_key_cat not in st.session_state:
+            st.session_state[session_key_cat] = default_categories
+        
+        # Category Filter (multiselect)
+        st.sidebar.markdown("#### Unit Configuration")
+        
+        selected_categories = st.sidebar.multiselect(
+            "Unit Categories",
+            options=active_categories,
+            key=session_key_cat,
+            help="Select unit categories to include in analysis"
         )
         
-        return selected_unit
+        if not selected_categories:
+            st.sidebar.info("Select at least one category to enable unit conversion")
+            return None
+        
+        # Target Unit Selectors (one per selected category)
+        target_units = {}
+        
+        for category in selected_categories:
+            # Get units for this category
+            units = converter.get_units_by_category(category)
+            
+            if not units:
+                continue
+            
+            # Session key for this category's target
+            target_key = f"unit_target_{module_key}_{category}"
+            
+            # Initialize default (first unit) if not set
+            if target_key not in st.session_state:
+                st.session_state[target_key] = units[0]
+            
+            # Create format function for display
+            def format_unit(unit):
+                return converter.get_unit_display_name(unit)
+            
+            selected_unit = st.sidebar.selectbox(
+                f"Target Unit ({category})",
+                options=units,
+                format_func=format_unit,
+                key=target_key,
+                help=f"Convert all {category} units to this unit"
+            )
+            
+            target_units[category] = selected_unit
+        
+        return {
+            'selected_categories': selected_categories,
+            'target_units': target_units
+        }
