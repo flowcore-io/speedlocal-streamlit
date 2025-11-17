@@ -23,7 +23,7 @@ class EnergyEmissionsModule(BaseModule):
     """Energy and Emissions visualization module."""
     
     # Sectors to exclude
-    EXCLUDED_SECTORS = ['DMZ', 'SYS', 'DHT', 'ELT', 'TRD', 'UPS', 'NA', 'FTS']
+    EXCLUDED_SECTORS = ['DMZ', 'DHT', 'ELT', 'TRD', 'UPS', 'NA', 'FTS']
     
     # Configuration for each section
     SECTION_CONFIGS = {
@@ -40,7 +40,7 @@ class EnergyEmissionsModule(BaseModule):
             'additional_filter': {},
             'plot_method': 'line_plot',
             'group_col_aggregate': 'sector_desc',
-            'group_col_disaggregate': 'comgroup_desc',
+            'group_col_disaggregate': 'com_desc',
             'title': 'Emissions'
         }
     }
@@ -123,7 +123,7 @@ class EnergyEmissionsModule(BaseModule):
         if desc_mapping:
             df_filtered = self._apply_descriptions(
                 df_filtered,
-                ['sector', 'comgroup', 'techgroup'],
+                ['sector', 'comgroup', 'techgroup', 'com'],
                 desc_mapping
             )
         

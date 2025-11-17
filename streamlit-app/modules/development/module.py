@@ -55,13 +55,16 @@ class DevelopmentModule(BaseModule):
         desc_df = self._get_desc_df()
         
         # Create two main sections
-        debug_tab, desc_tab = st.tabs(["🔍 Filter Debug", "📋 Description Tables"])
+        debug_tab, desc_tab, data_tab = st.tabs(["🔍 Filter Debug", "📋 Description Tables", "📊 Data Inspector"])
         
         with debug_tab:
             self._render_filter_debug(table_dfs, filters)
         
         with desc_tab:
             self._render_description_tables(desc_df)
+
+        with data_tab:
+            self._render_data_inspector(table_dfs)
     
     def _render_filter_debug(
         self, 
@@ -233,3 +236,117 @@ class DevelopmentModule(BaseModule):
             file_name="description_tables.csv",
             mime="text/csv"
         )   
+    def _render_data_inspector(
+        self,
+        table_dfs: Dict[str, pd.DataFrame]
+    ) -> None:
+        """Render data inspector to view loaded dataframes."""
+        
+        st.subheader("📊 Data Inspector")
+        st.markdown("Inspect dataframes loaded by `PandasDFCreator` from `mapping_db_views.csv`")
+        
+        if not table_dfs:
+            st.warning("No dataframes available. Please reload data.")
+            return
+        
+        # Show summary metrics
+        col1, col2 = st.columns(2)
+        with col1:
+            st.metric(label="Total Tables", value=len(table_dfs))
+        with col2:
+            total_rows = sum(len(df) for df in table_dfs.values())
+            st.metric(label="Total Rows (All Tables)", value=f"{total_rows:,}")
+        
+        st.markdown("---")
+        
+        # Dropdown to select table
+        table_names = list(table_dfs.keys())
+        selected_table = st.selectbox(
+            "Select Table to Inspect",
+            options=table_names,
+            key="dev_data_inspector_table"
+        )
+        
+        if selected_table:
+            df = table_dfs[selected_table]
+            
+            # Show table info
+            st.markdown(f"### Table: `{selected_table}`")
+            
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                st.metric(label="Rows", value=f"{len(df):,}")
+            with col2:
+                st.metric(label="Columns", value=len(df.columns))
+            with col3:
+                memory_mb = df.memory_usage(deep=True).sum() / 1024**2
+                st.metric(label="Memory (MB)", value=f"{memory_mb:.2f}")
+            with col4:
+                # Count unique values in key columns if they exist
+                if 'sector' in df.columns:
+                    unique_sectors = df['sector'].nunique()
+                    st.metric(label="Unique Sectors", value=unique_sectors)
+            
+            # Show column info
+            with st.expander("📋 Column Information", expanded=False):
+                col_info = []
+                for col in df.columns:
+                    col_info.append({
+                        "Column": col,
+                        "Type": str(df[col].dtype),
+                        "Non-Null": f"{df[col].notna().sum():,}",
+                        "Null": f"{df[col].isna().sum():,}",
+                        "Unique": f"{df[col].nunique():,}"
+                    })
+                st.dataframe(
+                    pd.DataFrame(col_info),
+                    use_container_width=True,
+                    hide_index=True
+                )
+            
+            # Search/filter functionality
+            st.markdown("#### Filter Data")
+            
+            # Let user filter by any column
+            filter_col = st.selectbox(
+                "Filter by column (optional)",
+                options=["None"] + list(df.columns),
+                key="dev_inspector_filter_col"
+            )
+            
+            filtered_df = df.copy()
+            
+            if filter_col != "None":
+                unique_values = df[filter_col].dropna().unique()
+                if len(unique_values) <= 50:  # Only show multiselect if reasonable number
+                    selected_values = st.multiselect(
+                        f"Select values for {filter_col}",
+                        options=sorted(unique_values.tolist()),
+                        key="dev_inspector_filter_values"
+                    )
+                    if selected_values:
+                        filtered_df = filtered_df[filtered_df[filter_col].isin(selected_values)]
+                else:
+                    st.info(f"Column has {len(unique_values)} unique values. Use search below instead.")
+            
+            # Show row count after filtering
+            st.info(f"Showing {len(filtered_df):,} of {len(df):,} rows")
+            
+            # Display dataframe
+            st.markdown("#### Data Preview")
+            st.dataframe(
+                filtered_df,
+                use_container_width=True,
+                height=400
+            )
+            
+            # Download option
+            st.markdown("---")
+            csv = filtered_df.to_csv(index=False)
+            st.download_button(
+                label=f"📥 Download {selected_table} as CSV",
+                data=csv,
+                file_name=f"{selected_table}_data.csv",
+                mime="text/csv",
+                key="dev_inspector_download"
+            )

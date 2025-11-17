@@ -27,13 +27,32 @@ class PandasDFCreator:
     def load_mapping_data(self):
         df = pd.read_csv(self.mapping_csv_path)
         df.replace("", pd.NA, inplace=True)
+
+        # # DEBUG: Print the emissions rows
+        # emissions_rows = df[df['table'] == 'emissions']
+        # print("\n=== DEBUG: Emissions rows in CSV ===")
+        # for idx, row in emissions_rows.iterrows():
+        #     print(f"\nRow {idx}:")
+        #     print(f"  sector: '{row.get('sector')}'")
+        #     print(f"  topic: '{row.get('topic')}'")
+        #     print(f"  attr: '{row.get('attr')}'")
+        #     print(f"  com: '{row.get('com')}'")
+        #     print(f"  comgroup: '{row.get('comgroup')}'")
+        # print("=" * 50)
+
         return df
 
     def build_filter_conditions(self, row: pd.Series) -> list:
         conditions = []
+
+        print(f"\n--- Building conditions for table '{row.get('table')}', sector '{row.get('sector')}' ---")
+
         for col in self.filter_cols:
             val = row.get(col)
-            if pd.notna(val):
+
+            print(f"  Checking {col}: val={repr(val)}, notna={pd.notna(val)}, str_check={str(val).lower() != 'nan' if pd.notna(val) else 'N/A'}")
+
+            if pd.notna(val) and str(val).lower() != 'nan':
                 val_str = str(val)
                 if val_str.startswith("^") or any(x in val_str for x in ["(", "|", ")", ".*", "$", "[", "]", "?"]):
                     patterns = [p.strip() for p in val_str.split(",") if p.strip()]
@@ -60,6 +79,9 @@ class PandasDFCreator:
                     values = [v.strip() for v in val_str.split(",") if v.strip()]
                     sub_conds = []
                     for v in values:
+                        # Strip quotes if present
+                        v = v.strip('"').strip("'")
+
                         if v.endswith("*"):
                             # Wildcard match
                             v_pattern = v[:-1]  # remove '*'
@@ -71,7 +93,7 @@ class PandasDFCreator:
                         conditions.append(f"({' OR '.join(sub_conds)})")
                     else:
                         conditions.append(sub_conds[0]) # single condition
-                        return conditions
+        return conditions
 
     def get_label_expression(self, row: pd.Series, table_name: str) -> str:
         label_col = str(row.get("label")).strip().lower() if pd.notna(row.get("label")) else None
@@ -107,6 +129,13 @@ class PandasDFCreator:
             sql = f"SELECT tr.*, {label_expr} AS label FROM timesreport tr"
             if conditions:
                 sql += " WHERE " + " AND ".join(conditions)
+            print(f"\n=== DEBUG SQL for '{table_name}' ===")
+            print(sql)
+            print(f"Conditions: {conditions}")
+
+            df = con.sql(sql).df()
+            print(f"→ Returned {len(df)} rows\n")
+
             df = con.sql(sql).df()
             dfs.append(df)
         if dfs:
