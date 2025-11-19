@@ -6,6 +6,7 @@ from typing import Dict
 from modules.base_module import BaseModule
 from modules.key_insights.module import KeyInsightsModule
 from modules.energy_emissions.module import EnergyEmissionsModule
+from modules.energy_emissions_v2.module import EnergyEmissionsModuleV2
 
 from modules.development.module import DevelopmentModule
 
@@ -25,6 +26,10 @@ class ModuleRegistry:
         # Register Energy/Emissions module (order=1)
         self.register_module("energy_emissions", EnergyEmissionsModule())
         
+        # Register Energy/Emissions module (order=1)
+        self.register_module("energy_emissions_v2", EnergyEmissionsModuleV2())
+
+
         # Future modules can be added here:
         # self.register_module("land_use", LandUseModule())
         # self.register_module("economics", EconomicsModule())

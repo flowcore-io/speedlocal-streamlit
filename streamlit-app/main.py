@@ -3,6 +3,10 @@ Main entry point for the modular TIMES Data Explorer application.
 Refactored from times_app_test.py to support modular architecture.
 """
 
+# Activate the environment
+# conda activate times_viz
+# streamlit run main.py
+
 import streamlit as st
 from pathlib import Path
 import pandas as pd
@@ -12,7 +16,8 @@ from core.data_loader import DataLoaderManager,create_description_mapping
 from core.filter_manager import FilterManager
 from config.module_registry import ModuleRegistry
 from components.sidebar import render_sidebar
-from utils._unit_converter import UnitConverter
+#from utils.unit_converter import UnitConverter
+from utils.unit_converter import UnitConverter, ExclusionInfo
 
 
 
@@ -152,109 +157,90 @@ def main():
             print(f"DEBUG: active_categories = {active_categories}")
 
             # Get module's default categories (if specified)
-            default_categories = filter_config.get('default_unit_categories', ['energy', 'mass'])
+            #default_categories = filter_config.get('default_unit_categories', ['energy', 'mass'])
             
-            print(f"DEBUG: default_categories = {default_categories}")
+            #print(f"DEBUG: default_categories = {default_categories}")
 
             # Render unit configuration
-            unit_config = filter_manager.render_unit_configuration(
-                active_categories,
-                st.session_state.active_module_key,
-                default_categories
-            )
-            print(f"DEBUG: unit_config = {unit_config}")
+            #unit_config = filter_manager.render_unit_configuration(
+            #    active_categories,
+            #    st.session_state.active_module_key,
+            #    default_categories
+            #)
+            #print(f"DEBUG: unit_config = {unit_config}")
 
-            if unit_config:
-                global_filters['unit_config'] = unit_config
+            # Store in session state and global filters
+            #if unit_config:
+            #    st.session_state['global_unit_config'] = unit_config
+            #    global_filters['unit_config'] = unit_config
+            #    
+                # 🔍 DEBUG: Show what's stored
+            #    st.sidebar.write("**DEBUG: Unit Config Stored:**")
+            #    st.sidebar.json(unit_config)
+            #else:
+            #    st.session_state['global_unit_config'] = None
 
-    # Create tabs
-    tabs = st.tabs(module_names)
-
-    print(f"DEBUG: About to iterate tabs")
-    for tab, (module_key, module) in zip(tabs, enabled_modules.items()):
-        print(f"DEBUG: Checking tab for module_key = {module_key}")
-        with tab:
-            print(f"DEBUG: Inside 'with tab' for module_key = {module_key}")
-            st.session_state.active_module_key = module_key
+    # Initialize selected tab in session state
+    if 'selected_tab_index' not in st.session_state:
+        st.session_state.selected_tab_index = 0
+    
+    # Create tabs with unique keys
+    tab_container = st.container()
+    
+    with tab_container:
+        # Use radio buttons styled as tabs (more reliable than st.tabs for state management)
+        selected_tab_name = st.radio(
+            "Select Module",
+            options=module_names,
+            index=st.session_state.selected_tab_index,
+            horizontal=True,
+            key="module_selector",
+            label_visibility="collapsed"
+        )
+        
+        # Update selected index
+        st.session_state.selected_tab_index = module_names.index(selected_tab_name)
+        
+        # Get the selected module
+        selected_module_key = module_keys[st.session_state.selected_tab_index]
+        selected_module = enabled_modules[selected_module_key]
+        
+        st.session_state.active_module_key = selected_module_key
+        
+        st.divider()
+        
+        # Render only the selected module
+        try:
+            # Get module-specific filter config
+            filter_config = selected_module.get_filter_config()
             
-    # Render each module in its tab
-    for tab, (module_key, module) in zip(tabs, enabled_modules.items()):
-        with tab:
-            # This tab's content only executes when it's active
-
-            st.session_state.active_module_key = module_key
-
-            try:
-                # Get module-specific filter config
-                filter_config = module.get_filter_config()
-                
-                # Check if module wants global filters applied
-                apply_global = filter_config.get('apply_global_filters', True)
-                
-                # Render module-specific filters (if any)
-                module_filters = {}
-                if filter_config.get('show_module_filters', False):
-                    with st.expander("📊 Additional Filters", expanded=False):
-                        module_filters = filter_manager.render_module_filters(
-                            module_key,
-                            filter_config
-                        )
-                
-                # Decide which filters to pass
-                if apply_global:
-                    combined_filters = {**global_filters, **module_filters}
-                else:
-                    combined_filters = module_filters
-                
-                # Apply unit conversion if module opts in
-                if filter_config.get('apply_unit_conversion', False) and 'unit_config' in combined_filters:
-                    unit_config = combined_filters['unit_config']
-                    converter = session_mgr.get('unit_converter')
-                    
-                    if converter:
-                        converted_dfs = {}
-                        all_unknown_units = []
-                        
-                        for table_name, df in table_dfs.items():
-                            if table_name in module.get_required_tables():
-                                # Filter by categories
-                                df_filtered, unknown_units = converter.filter_by_categories(
-                                    df, 
-                                    unit_config['selected_categories']
-                                )
-                                all_unknown_units.extend(unknown_units)
-                                
-                                # Convert units
-                                df_converted = converter.convert_dataframe(
-                                    df_filtered,
-                                    unit_config['target_units']
-                                )
-                                converted_dfs[table_name] = df_converted
-                            else:
-                                converted_dfs[table_name] = df
-                        
-                        # Show warning if unknown units found
-                        if all_unknown_units:
-                            unique_unknown = list(set(all_unknown_units))
-                            st.warning(
-                                f"⚠️ Unknown units filtered out: {', '.join(unique_unknown)}. "
-                                f"These units are not in unit_conversions.csv and have been excluded."
-                            )
-                        
-                        # Pass converted data to module
-                        module.render(converted_dfs, combined_filters)
-                    else:
-                        st.error("Unit converter not available. Please check unit_conversions.csv")
-                        module.render(table_dfs, combined_filters)
-                else:
-                    # No unit conversion - pass original data
-                    module.render(table_dfs, combined_filters)
-            except Exception as e:
-                st.error(f"Error rendering {module.name}: {str(e)}")
-                
-                # Debug mode: show full error
-                if st.checkbox(f"Show error details for {module.name}", key=f"error_{module_key}"):
-                    st.exception(e)
+            # Check if module wants global filters applied
+            apply_global = filter_config.get('apply_global_filters', True)
+            
+            # Render module-specific filters (if any)
+            module_filters = {}
+            if filter_config.get('show_module_filters', False):
+                with st.expander("📊 Additional Filters", expanded=False):
+                    module_filters = filter_manager.render_module_filters(
+                        selected_module_key,
+                        filter_config
+                    )
+            
+            # Combine filters
+            if apply_global:
+                combined_filters = {**global_filters, **module_filters}
+            else:
+                combined_filters = module_filters
+            
+            # Module renders with the combined filters
+            selected_module.render(table_dfs, combined_filters)
+            
+        except Exception as e:
+            st.error(f"Error rendering {selected_module.name}: {str(e)}")
+            
+            # Debug mode: show full error
+            if st.checkbox(f"Show error details for {selected_module.name}", key=f"error_{selected_module_key}"):
+                st.exception(e)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,19 @@
+# Default target units for unit conversion across all modules
+# Each category maps to a default unit that will be used in the sidebar
+# These units must exist in the unit_conversions.csv file
+
+default_units:
+  mass: "t"            # kilotonne
+  energy: "GJ"         # gigajoule
+  currency: "MKr25"    # million danish kroner
+  length: "km"         # kilometer
+  area: "KHA"          # thousand hectares
+  volume: "MM3"        # million cubic meters
+  transport: "roundtrips"    # roundtrips ferries and planes
+
+# Optional: Define which categories should be selected by default
+# If not specified, all categories will be selected
+default_selected_categories:
+  - mass
+  - energy
+  - currency
