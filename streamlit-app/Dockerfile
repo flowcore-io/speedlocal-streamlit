@@ -28,4 +28,4 @@ HEALTHCHECK CMD curl --fail http://localhost:8501/_stcore/health || exit 1
 
 # Run the application
 ENTRYPOINT ["python", "-m", "streamlit", "run"]
-CMD ["times_app.py", "--server.port=8501", "--server.address=0.0.0.0", "--server.enableWebsocketCompression=false"]
+CMD ["main.py", "--server.port=8501", "--server.address=0.0.0.0", "--server.enableWebsocketCompression=false"]

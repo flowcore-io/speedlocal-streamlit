@@ -1,0 +1,18 @@
+unit_long,from_unit,to_unit,factor,category
+ton,t,kt,0.001,mass
+ton,t,t,1,mass
+kiloton,kt,t,1000,mass
+kiloton,kt,kt,1,mass
+Mio. DKK,MKr25,MEuro25,0.134228188,currency
+Mio. Euro,MEuro25,MKr25,7.45,currency
+Mio. DKK,MKr25,MEuro25,0.134228188,currency
+Mio. Euro,MEuro25,MEuro25,1,currency
+Mio. DKK,MKr25,MKr25,1,currency
+terajoules,TJ,TJ,1,energy
+terajoules,TJ,GJ,1000,energy
+gigajoules,GJ,TJ,0.001,energy
+gigajoules,GJ,GJ,1,energy
+kilometer,km,km,1,length
+thousand hectares,KHA,KHA,1,area
+million cubic meters,MM3,MM3,1,volume
+roundtrips,roundtrips,roundtrips,1,transport

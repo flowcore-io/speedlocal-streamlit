@@ -2,29 +2,11 @@
 
 A Streamlit application for exploring TIMES energy model data with interactive visualizations for energy flows and emissions analysis.
 
-## Features
-
-- 🔗 **Flexible Database Connection**: Connect to local DuckDB files or Azure blob storage
-- 💾 **Smart Caching**: Automatic caching of downloaded databases for faster access
-- ⏰ **URL Expiry Detection**: Automatic detection of Azure URL expiration
-- 📊 **Multi-scenario Comparison**: Compare different scenarios side by side
-- 🎯 **Interactive Visualizations**: Energy and emission data with detailed hover information
-- 🏭 **Sector Analysis**: Separate analysis for different energy sectors
-- 🌱 **Emissions Tracking**: Comprehensive emissions visualization and trends
-
 ## Project Structure
 
 ```
 streamlit-app/
-├── times_app.py           # Main Streamlit application
-├── requirements.txt       # Python dependencies
-├── Dockerfile            # Container configuration
-├── utils/
-│   └── settings.py       # Geographic and settings data
-├── images/
-│   ├── speed-local.jpg   # Application branding
-│   └── map.png          # Energy system map
-└── README.md            # This documentation
+├── under development
 ```
 
 ## Quick Start
@@ -40,7 +22,7 @@ streamlit-app/
 2. **Run the Application**:
 
    ```bash
-   streamlit run times_app.py
+   streamlit run main.py
    ```
 
 3. **Access the App**:
@@ -119,14 +101,7 @@ The application expects a DuckDB database with the following key tables:
 
 ### Expected Columns in `timesreport_facts`
 
-- `year`: Year of the data
-- `scen`: Scenario identifier
-- `topic`: Data topic ('energy' or 'emission')
-- `attr`: Attribute type ('f_in', 'f_out', etc.)
-- `sector`: Sector identifier
-- `comgroup`: Commodity group
-- `value`: Numeric value
-- `unit`: Unit of measurement
+- under development
 
 ## Configuration
 
