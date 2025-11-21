@@ -175,8 +175,26 @@ class EnergyEmissionsModuleV2(BaseModule):
         st.write(f"### 🔍 DEBUG: {config['title']}")
         st.write(f"**1. Target units from config:**", unit_config.get('target_units'))
         st.write(f"**2. Units in your data (first 10):**", df[config.get('unit_col', 'unit')].dropna().unique()[:10].tolist())
-        st.write(f"**3. Sample values BEFORE conversion:**", df[config.get('value_col', 'value')].head(3).tolist())
+        st.write(f"**3. Sample values BEFORE conversion:**")
         
+        unit_col = config.get('unit_col', 'unit')
+        currency_col = config.get('currency_col', 'cur')
+        value_col = config.get('value_col', 'value')
+
+        for idx, row in df.head(3).iterrows():
+            value = row[value_col]
+            unit = row.get(unit_col, '')
+            currency = row.get(currency_col, '')
+            
+            # Build display string
+            parts = [f"  Row {idx}: {value}"]
+            if pd.notna(unit) and unit != '' and unit != 'NA':
+                parts.append(unit)
+            if pd.notna(currency) and currency != '' and currency != 'NA':
+                parts.append(f"[{currency}]")
+            
+            st.write(" ".join(parts))
+
         # Apply conversion and filtering
         df_converted, exclusion_info = converter.convert_and_filter(
             df,
@@ -189,8 +207,22 @@ class EnergyEmissionsModuleV2(BaseModule):
         
         # 🔍 DEBUG OUTPUT
         st.write(f"**4. Units AFTER conversion:**", df_converted[config.get('unit_col', 'unit')].dropna().unique()[:10].tolist())
-        st.write(f"**5. Sample values AFTER conversion:**", df_converted[config.get('value_col', 'value')].head(3).tolist())
-        st.write(f"**6. Rows: {len(df)} → {len(df_converted)}**")
+        st.write(f"**5. Sample values AFTER conversion:**")
+        for idx, row in df_converted.head(3).iterrows():
+            value = row[value_col]
+            unit = row.get(unit_col, '')
+            currency = row.get(currency_col, '')
+            
+            # Build display string
+            parts = [f"  Row {idx}: {value}"]
+            if pd.notna(unit) and unit != '' and unit != 'NA':
+                parts.append(unit)
+            if pd.notna(currency) and currency != '' and currency != 'NA':
+                parts.append(f"[{currency}]")
+            
+            st.write(" ".join(parts))
+
+        st.write(f"**6. Rows: {len(df)} to {len(df_converted)}**")
         st.write("---")
         
         # Store exclusion info for this section
