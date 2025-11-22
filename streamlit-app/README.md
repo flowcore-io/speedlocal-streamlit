@@ -22,7 +22,7 @@ streamlit-app/
 2. **Run the Application**:
 
    ```bash
-   streamlit run times_app_test.py
+   streamlit run main.py
    ```
 
 3. **Access the App**:

@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.9](https://github.com/flowcore-io/speedlocal-streamlit/compare/v0.5.8...v0.5.9) (2025-11-21)
+
+
+### Bug Fixes
+
+* Update README to reflect the change in command for running the application from times_app_test.py to main.py, force deploy ([2cb3625](https://github.com/flowcore-io/speedlocal-streamlit/commit/2cb36250708028ce89c4413e9146ca471f9e8f41))
+
 ## [0.5.8](https://github.com/flowcore-io/speedlocal-streamlit/compare/v0.5.7...v0.5.8) (2025-10-03)
 
 
