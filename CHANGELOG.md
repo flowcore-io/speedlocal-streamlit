@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.10](https://github.com/flowcore-io/speedlocal-streamlit/compare/v0.5.9...v0.5.10) (2025-11-22)
+
+
+### Bug Fixes
+
+* Added pyyaml&gt;=6.0.0 to requirements.txt ([81c784a](https://github.com/flowcore-io/speedlocal-streamlit/commit/81c784a07ade10cd8bcfc62f27bb776654d5f679))
+
 ## [0.5.9](https://github.com/flowcore-io/speedlocal-streamlit/compare/v0.5.8...v0.5.9) (2025-11-21)
 
 
