@@ -144,41 +144,6 @@ def main():
         filter_config = active_module.get_filter_config()
         
         print(f"DEBUG: Active module = {st.session_state.active_module_key}")
-        print(f"DEBUG: apply_unit_conversion = {filter_config.get('apply_unit_conversion', False)}")
-
-
-        if filter_config.get('apply_unit_conversion', False):
-            # Get active categories from current module's data
-            active_categories = filter_manager.get_active_unit_categories(
-                st.session_state.active_module_key,
-                table_dfs
-            )
-            
-            print(f"DEBUG: active_categories = {active_categories}")
-
-            # Get module's default categories (if specified)
-            #default_categories = filter_config.get('default_unit_categories', ['energy', 'mass'])
-            
-            #print(f"DEBUG: default_categories = {default_categories}")
-
-            # Render unit configuration
-            #unit_config = filter_manager.render_unit_configuration(
-            #    active_categories,
-            #    st.session_state.active_module_key,
-            #    default_categories
-            #)
-            #print(f"DEBUG: unit_config = {unit_config}")
-
-            # Store in session state and global filters
-            #if unit_config:
-            #    st.session_state['global_unit_config'] = unit_config
-            #    global_filters['unit_config'] = unit_config
-            #    
-                # 🔍 DEBUG: Show what's stored
-            #    st.sidebar.write("**DEBUG: Unit Config Stored:**")
-            #    st.sidebar.json(unit_config)
-            #else:
-            #    st.session_state['global_unit_config'] = None
 
     # Initialize selected tab in session state
     if 'selected_tab_index' not in st.session_state:

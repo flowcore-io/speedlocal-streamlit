@@ -131,10 +131,10 @@ class EnergyEmissionsModuleV2(BaseModule):
             Dict with 'target_units' and 'selected_categories'
         """
         # 🔍 DEBUG
-        st.write("**DEBUG _get_unit_config:**")
-        st.write(f"  - 'unit_config' in filters: {'unit_config' in filters}")
-        if 'unit_config' in filters:
-            st.write(f"  - filters['unit_config']: {filters['unit_config']}")
+        # st.write("**DEBUG _get_unit_config:**")
+        # st.write(f"  - 'unit_config' in filters: {'unit_config' in filters}")
+        # if 'unit_config' in filters:
+        #     st.write(f"  - filters['unit_config']: {filters['unit_config']}")
         
         # First, check if there's a global unit config in filters
         if 'unit_config' in filters and filters['unit_config']:
@@ -171,29 +171,29 @@ class EnergyEmissionsModuleV2(BaseModule):
         # Get unit configuration
         unit_config = self._get_unit_config(filters)
         
-        # 🔍 DEBUG OUTPUT
-        st.write(f"### 🔍 DEBUG: {config['title']}")
-        st.write(f"**1. Target units from config:**", unit_config.get('target_units'))
-        st.write(f"**2. Units in your data (first 10):**", df[config.get('unit_col', 'unit')].dropna().unique()[:10].tolist())
-        st.write(f"**3. Sample values BEFORE conversion:**")
+        # # 🔍 DEBUG OUTPUT
+        # st.write(f"### 🔍 DEBUG: {config['title']}")
+        # st.write(f"**1. Target units from config:**", unit_config.get('target_units'))
+        # st.write(f"**2. Units in your data (first 10):**", df[config.get('unit_col', 'unit')].dropna().unique()[:10].tolist())
+        # st.write(f"**3. Sample values BEFORE conversion:**")
         
-        unit_col = config.get('unit_col', 'unit')
-        currency_col = config.get('currency_col', 'cur')
-        value_col = config.get('value_col', 'value')
+        # unit_col = config.get('unit_col', 'unit')
+        # currency_col = config.get('currency_col', 'cur')
+        # value_col = config.get('value_col', 'value')
 
-        for idx, row in df.head(3).iterrows():
-            value = row[value_col]
-            unit = row.get(unit_col, '')
-            currency = row.get(currency_col, '')
+        # for idx, row in df.head(3).iterrows():
+        #     value = row[value_col]
+        #     unit = row.get(unit_col, '')
+        #     currency = row.get(currency_col, '')
             
-            # Build display string
-            parts = [f"  Row {idx}: {value}"]
-            if pd.notna(unit) and unit != '' and unit != 'NA':
-                parts.append(unit)
-            if pd.notna(currency) and currency != '' and currency != 'NA':
-                parts.append(f"[{currency}]")
+        #     # Build display string
+        #     parts = [f"  Row {idx}: {value}"]
+        #     if pd.notna(unit) and unit != '' and unit != 'NA':
+        #         parts.append(unit)
+        #     if pd.notna(currency) and currency != '' and currency != 'NA':
+        #         parts.append(f"[{currency}]")
             
-            st.write(" ".join(parts))
+        #     st.write(" ".join(parts))
 
         # Apply conversion and filtering
         df_converted, exclusion_info = converter.convert_and_filter(
@@ -205,25 +205,25 @@ class EnergyEmissionsModuleV2(BaseModule):
             value_col=config.get('value_col', 'value')
         )
         
-        # 🔍 DEBUG OUTPUT
-        st.write(f"**4. Units AFTER conversion:**", df_converted[config.get('unit_col', 'unit')].dropna().unique()[:10].tolist())
-        st.write(f"**5. Sample values AFTER conversion:**")
-        for idx, row in df_converted.head(3).iterrows():
-            value = row[value_col]
-            unit = row.get(unit_col, '')
-            currency = row.get(currency_col, '')
+        # # 🔍 DEBUG OUTPUT
+        # st.write(f"**4. Units AFTER conversion:**", df_converted[config.get('unit_col', 'unit')].dropna().unique()[:10].tolist())
+        # st.write(f"**5. Sample values AFTER conversion:**")
+        # for idx, row in df_converted.head(3).iterrows():
+        #     value = row[value_col]
+        #     unit = row.get(unit_col, '')
+        #     currency = row.get(currency_col, '')
             
-            # Build display string
-            parts = [f"  Row {idx}: {value}"]
-            if pd.notna(unit) and unit != '' and unit != 'NA':
-                parts.append(unit)
-            if pd.notna(currency) and currency != '' and currency != 'NA':
-                parts.append(f"[{currency}]")
+        #     # Build display string
+        #     parts = [f"  Row {idx}: {value}"]
+        #     if pd.notna(unit) and unit != '' and unit != 'NA':
+        #         parts.append(unit)
+        #     if pd.notna(currency) and currency != '' and currency != 'NA':
+        #         parts.append(f"[{currency}]")
             
-            st.write(" ".join(parts))
+        #     st.write(" ".join(parts))
 
-        st.write(f"**6. Rows: {len(df)} to {len(df_converted)}**")
-        st.write("---")
+        # st.write(f"**6. Rows: {len(df)} to {len(df_converted)}**")
+        # st.write("---")
         
         # Store exclusion info for this section
         self._exclusion_info[section_key] = exclusion_info
@@ -363,119 +363,25 @@ class EnergyEmissionsModuleV2(BaseModule):
     def _render_unit_controls(self) -> Dict[str, Any]:
         """
         Render unit conversion controls within the module.
-        Uses global defaults but stores per-module.
+        Delegates to FilterManager for actual rendering.
         
         Returns:
             Dict with 'selected_categories' and 'target_units'
         """
-        converter = self._get_unit_converter()
-        if not converter:
-            st.warning("Unit converter not available")
+        # Get filter manager from session
+        filter_manager = st.session_state.get('filter_manager')
+        if not filter_manager:
+            st.warning("Filter manager not available")
             return {'target_units': {}, 'selected_categories': []}
         
-        # Get defaults from config
-        default_target_units = converter.get_default_target_units()
-        available_categories = ['energy', 'mass']  # Module-specific categories
+        # Get module-specific categories (energy and mass for this module)
+        available_categories = ['energy', 'mass']
         
-        # Session keys unique to this module
+        # Use unique module key
         module_key = self.name.replace(" ", "_").lower()
-        cat_key = f"{module_key}_unit_categories"
         
-        # 🆕 IMPORTANT: Initialize ALL session state keys BEFORE rendering widgets
-        # This prevents the "first change rerun" issue
-        if cat_key not in st.session_state:
-            st.session_state[cat_key] = available_categories
-        
-        # Initialize all target unit keys upfront
-        for cat in available_categories:
-            target_key = f"{module_key}_unit_target_{cat}"
-            if target_key not in st.session_state:
-                default_unit = default_target_units.get(cat)
-                if default_unit:
-                    st.session_state[target_key] = default_unit
-        
-        # Create compact layout with columns
-        col1, col2, col3 = st.columns([3, 3, 1])
-        
-        with col1:
-            st.markdown("**📊 Current Defaults:**")
-            defaults_display = " | ".join([
-                f"{cat}: **{default_target_units.get(cat, 'N/A')}**" 
-                for cat in available_categories
-            ])
-            st.markdown(defaults_display)
-        
-        with col2:
-            # Category selection
-            selected_categories = st.multiselect(
-                "Active Categories",
-                options=available_categories,
-                default=st.session_state[cat_key],
-                key=f"{cat_key}_widget",
-                help="Categories to include in analysis"
-            )
-            # Update session state after widget renders
-            st.session_state[cat_key] = selected_categories
-        
-        with col3:
-            # Reset button
-            if st.button("🔄 Reset", key=f"{module_key}_reset", help="Reset to defaults"):
-                st.session_state[cat_key] = available_categories
-                for cat in available_categories:
-                    target_key = f"{module_key}_unit_target_{cat}"
-                    default_unit = default_target_units.get(cat)
-                    if default_unit:
-                        st.session_state[target_key] = default_unit
-                st.rerun()
-        
-        if not selected_categories:
-            st.warning("⚠️ Select at least one category to view data")
-            return {'target_units': {}, 'selected_categories': []}
-        
-        # Target unit selectors in a row
-        st.markdown("**🎯 Target Units:**")
-        cols = st.columns(len(selected_categories))
-        
-        target_units = {}
-        for idx, category in enumerate(selected_categories):
-            with cols[idx]:
-                units = converter.get_units_by_category(category)
-                if not units:
-                    continue
-                
-                target_key = f"{module_key}_unit_target_{category}"
-                
-                # Get current value from session state (already initialized above)
-                current_unit = st.session_state.get(target_key)
-                
-                # Validate it's still in the list
-                if current_unit not in units:
-                    current_unit = units[0]
-                    st.session_state[target_key] = current_unit
-                
-                current_index = units.index(current_unit)
-                
-                # Format function
-                def format_unit(unit, cat=category):
-                    display_name = converter.get_unit_display_name(unit)
-                    if unit == default_target_units.get(cat):
-                        return f"{unit} ({display_name}) ⭐"
-                    return f"{unit} ({display_name})"
-                
-                selected_unit = st.selectbox(
-                    f"{category.capitalize()}",
-                    options=units,
-                    index=current_index,
-                    format_func=format_unit,
-                    key=f"{target_key}_widget",
-                    help=f"Convert all {category} units to this unit"
-                )
-                
-                # Update session state after widget renders
-                st.session_state[target_key] = selected_unit
-                target_units[category] = selected_unit
-        
-        return {
-            'selected_categories': selected_categories,
-            'target_units': target_units
-        }
+        # Delegate to FilterManager
+        return filter_manager.render_module_unit_controls(
+            module_key=module_key,
+            available_categories=available_categories
+        )

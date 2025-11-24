@@ -204,158 +204,128 @@ class FilterManager:
         
         return sorted(list(categories))
 
-    def render_unit_configuration(
-            self,
-            active_categories: List[str],
-            module_key: str,
-            default_categories: List[str] = None
-        ) -> Optional[Dict[str, Any]]:
-            """
-            Render unit configuration controls in sidebar.
+    def render_module_unit_controls(
+        self,
+        module_key: str,
+        available_categories: List[str]
+    ) -> Dict[str, Any]:
+        """
+        Render unit conversion controls for a specific module.
+        
+        Args:
+            module_key: Unique module identifier (e.g., "energy_emissions_v2")
+            available_categories: List of categories relevant to this module
             
-            Args:
-                active_categories: List of categories available in current module
-                module_key: Use 'global' for shared settings across modules
-                default_categories: Default categories to select
-                
-            Returns:
-                Dict with 'selected_categories' and 'target_units' or None
-            """
-            if not active_categories:
-                return None
-            
-            # Get unit converter
-            converter = st.session_state.get('unit_converter')
-            if not converter:
-                return None
-            
-            # Get default target units from config
-            default_target_units = converter.get_default_target_units()
-            
-            # Set defaults for categories
-            if default_categories is None:
-                default_categories = converter.default_selected_categories or ['energy', 'mass']
-            
-            # Filter defaults to only include available categories
-            default_categories = [cat for cat in default_categories if cat in active_categories]
-            
-            # Use simple keys without module prefix for global settings
-            cat_session_key = "global_unit_categories"
-            
-            # Initialize session state once
-            if cat_session_key not in st.session_state:
-                st.session_state[cat_session_key] = default_categories
-                # Initialize target units too
-                for cat in default_categories:
-                    target_key = f"global_unit_target_{cat}"
-                    if target_key not in st.session_state:
-                        default_unit = default_target_units.get(cat)
-                        if default_unit:
-                            st.session_state[target_key] = default_unit
-            
-            # Category Filter (multiselect)
-            st.sidebar.markdown("#### Unit Conversion")
-            st.sidebar.caption("🌍 Global settings - apply to all modules")
-            
-            # Show info about defaults
-            with st.sidebar.expander("ℹ️ Default Units", expanded=False):
-                st.markdown("**Configured default target units:**")
-                for cat, unit in default_target_units.items():
-                    if cat in active_categories:
-                        display_name = converter.get_unit_display_name(unit)
-                        st.text(f"  • {cat}: {unit} ({display_name})")
-            
-            # Get current value from session state
-            current_categories = st.session_state.get(cat_session_key, default_categories)
-            
-            # Ensure current categories are valid
-            current_categories = [cat for cat in current_categories if cat in active_categories]
-            if not current_categories:
-                current_categories = default_categories
-            
-            selected_categories = st.sidebar.multiselect(
+        Returns:
+            Dict with 'selected_categories' and 'target_units'
+        """
+        converter = st.session_state.get('unit_converter')
+        if not converter:
+            st.warning("Unit converter not available")
+            return {'target_units': {}, 'selected_categories': []}
+        
+        # Get defaults from config
+        default_target_units = converter.get_default_target_units()
+        
+        # Session keys unique to this module
+        cat_key = f"{module_key}_unit_categories"
+        
+        # 🆕 IMPORTANT: Initialize ALL session state keys BEFORE rendering widgets
+        if cat_key not in st.session_state:
+            st.session_state[cat_key] = available_categories
+        
+        # Initialize all target unit keys upfront
+        for cat in available_categories:
+            target_key = f"{module_key}_unit_target_{cat}"
+            if target_key not in st.session_state:
+                default_unit = default_target_units.get(cat)
+                if default_unit:
+                    st.session_state[target_key] = default_unit
+        
+        # Create compact layout with columns
+        col1, col2, col3 = st.columns([3, 3, 1])
+        
+        with col1:
+            st.markdown("**📊 Current Defaults:**")
+            defaults_display = " | ".join([
+                f"{cat}: **{default_target_units.get(cat, 'N/A')}**" 
+                for cat in available_categories
+            ])
+            st.markdown(defaults_display)
+        
+        with col2:
+            # Category selection
+            selected_categories = st.multiselect(
                 "Active Categories",
-                options=active_categories,
-                default=current_categories,
-                help="Select unit categories to include in analysis. Rows with other categories will be excluded."
+                options=available_categories,
+                default=st.session_state[cat_key],
+                key=f"{cat_key}_widget",
+                help="Categories to include in analysis"
             )
-            
-            # Update session state
-            st.session_state[cat_session_key] = selected_categories
-            
-            if not selected_categories:
-                st.sidebar.warning("⚠️ Select at least one category to view data")
-                return None
-            
-            # Target Unit Selectors (one per selected category)
-            target_units = {}
-            
-            st.sidebar.markdown("**Target Units:**")
-            
-            for category in selected_categories:
-                # Get units for this category
-                units = converter.get_units_by_category(category)
-                
-                if not units:
-                    continue
-                
-                # Session key for this category's target
-                target_key = f"global_unit_target_{category}"
-                
-                # Get or initialize default
-                if target_key not in st.session_state:
-                    default_unit = default_target_units.get(category, units[0])
-                    st.session_state[target_key] = default_unit if default_unit in units else units[0]
-                
-                # Get current value
-                current_unit = st.session_state[target_key]
-                
-                # Make sure it's still valid
-                if current_unit not in units:
-                    current_unit = units[0]
-                    st.session_state[target_key] = current_unit
-                
-                # Find index
-                try:
-                    current_index = units.index(current_unit)
-                except ValueError:
-                    current_index = 0
-                
-                # Create format function for display
-                def format_unit(unit, cat=category):
-                    display_name = converter.get_unit_display_name(unit)
-                    if unit == default_target_units.get(cat):
-                        return f"{unit} - {display_name} ⭐"
-                    return f"{unit} - {display_name}"
-                
-                # Render selectbox
-                selected_unit = st.sidebar.selectbox(
-                    f"{category.capitalize()}",
-                    options=units,
-                    index=current_index,
-                    format_func=format_unit,
-                    help=f"Convert all {category} units to this target unit"
-                )
-                
-                # Update session state
-                st.session_state[target_key] = selected_unit
-                target_units[category] = selected_unit
-            
+            # Update session state after widget renders
+            st.session_state[cat_key] = selected_categories
+        
+        with col3:
             # Reset button
-            if st.sidebar.button("🔄 Reset to Defaults", use_container_width=True):
-                # Reset categories
-                st.session_state[cat_session_key] = default_categories
-                # Reset target units
-                for cat in active_categories:
-                    target_key = f"global_unit_target_{cat}"
+            if st.button("🔄 Reset", key=f"{module_key}_reset", help="Reset to defaults"):
+                st.session_state[cat_key] = available_categories
+                for cat in available_categories:
+                    target_key = f"{module_key}_unit_target_{cat}"
                     default_unit = default_target_units.get(cat)
                     if default_unit:
                         st.session_state[target_key] = default_unit
                 st.rerun()
-            
-            return {
-                'selected_categories': selected_categories,
-                'target_units': target_units
-            }
+        
+        if not selected_categories:
+            st.warning("⚠️ Select at least one category to view data")
+            return {'target_units': {}, 'selected_categories': []}
+        
+        # Target unit selectors in a row
+        st.markdown("**🎯 Target Units:**")
+        cols = st.columns(len(selected_categories))
+        
+        target_units = {}
+        for idx, category in enumerate(selected_categories):
+            with cols[idx]:
+                units = converter.get_units_by_category(category)
+                if not units:
+                    continue
+                
+                target_key = f"{module_key}_unit_target_{category}"
+                
+                # Get current value from session state (already initialized above)
+                current_unit = st.session_state.get(target_key)
+                
+                # Validate it's still in the list
+                if current_unit not in units:
+                    current_unit = units[0]
+                    st.session_state[target_key] = current_unit
+                
+                current_index = units.index(current_unit)
+                
+                # Format function
+                def format_unit(unit, cat=category):
+                    display_name = converter.get_unit_display_name(unit)
+                    if unit == default_target_units.get(cat):
+                        return f"{unit} ({display_name}) ⭐"
+                    return f"{unit} ({display_name})"
+                
+                selected_unit = st.selectbox(
+                    f"{category.capitalize()}",
+                    options=units,
+                    index=current_index,
+                    format_func=format_unit,
+                    key=f"{target_key}_widget",
+                    help=f"Convert all {category} units to this unit"
+                )
+                
+                # Update session state after widget renders
+                st.session_state[target_key] = selected_unit
+                target_units[category] = selected_unit
+        
+        return {
+            'selected_categories': selected_categories,
+            'target_units': target_units
+        }
         
         
