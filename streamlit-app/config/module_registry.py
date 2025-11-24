@@ -29,9 +29,9 @@ class ModuleRegistry:
         # self.register_module("energy_emissions", EnergyEmissionsModule())
         
         # Register Energy/Emissions module (order=1)
-        self.register_module("energy_emissions_v2", EnergyEmissionsModuleV2())
+        self.register_module("energy_&_emissions", EnergyEmissionsModuleV2())
 
-        self.register_module("energy_map", EnergyMapModule())
+        self.register_module("energy_flow_map", EnergyMapModule())
 
         # Future modules can be added here:
         # self.register_module("land_use", LandUseModule())

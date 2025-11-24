@@ -1,6 +1,5 @@
 """
 Key Insights module for stakeholder-facing dashboard.
-Refactored from the Development tab in original times_app_test.py.
 """
 
 import streamlit as st
@@ -27,11 +26,11 @@ class KeyInsightsModule(BaseModule):
     def get_required_tables(self) -> list:
         return []  # Works with whatever is available
     
-    def get_filter_config(self) -> Dict[str, Any]:
+    def get_config(self) -> Dict[str, Any]:
+        """Return module configuration."""
         return {
             "apply_global_filters": False,
-            "apply_unit_conversion": True,  # ← Enable unit conversion
-            "default_unit_categories": ['energy','mass'],
+            "apply_unit_conversion": False,
             "show_module_filters": False,
             "filterable_columns": ['scen', 'year'],
             "default_columns": []
@@ -92,7 +91,7 @@ class KeyInsightsModule(BaseModule):
         - **Bornholm** (Denmark)
         """)
         
-        # Display images (from Development tab)
+        # Display images
         try:
             st.image("images/speed-local.jpg", caption="Speed Local", use_container_width=True)
         except FileNotFoundError:

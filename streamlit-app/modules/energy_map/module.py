@@ -36,10 +36,10 @@ class EnergyMapModule(BaseModule):
     def get_required_tables(self) -> list:
         return ["map"]
     
-    def get_filter_config(self) -> Dict[str, Any]:
+    def get_config(self) -> Dict[str, Any]:  # ✅ RENAMED from get_filter_config
         return {
-            "apply_global_filters": True,  # Get scenario from sidebar
-            "apply_unit_conversion": False,  # Maps don't need unit conversion
+            "apply_global_filters": True,
+            "apply_unit_conversion": True,  # ✅ ENABLED unit conversion
             "show_module_filters": True,
             "filterable_columns": ['year', 'com'],
             "default_columns": []
@@ -55,6 +55,28 @@ class EnergyMapModule(BaseModule):
         if not self.validate_data(table_dfs):
             self.show_error("Map data table not available.")
             return
+        
+        # ✅ Get unit manager from session
+        unit_mgr = st.session_state.get('unit_manager')
+        
+        # ✅ Render unit controls
+        unit_config = None
+        if unit_mgr:
+            unit_config = unit_mgr.render_unit_controls_if_enabled(
+                module=self,
+                table_dfs=table_dfs,
+                expanded=False
+            )
+        
+        # ✅ Add to filters if available
+        if unit_config:
+            filters['unit_config'] = unit_config
+        
+        st.divider()
+        
+        # ✅ Show conversion summary
+        if unit_config and unit_mgr:
+            unit_mgr.show_conversion_summary()
         
         # Get raw data
         df_raw = table_dfs.get("map")
@@ -77,8 +99,35 @@ class EnergyMapModule(BaseModule):
             self.show_warning("No data available after applying scenario filters.")
             return
         
+        # ✅ Apply unit conversion
+        df_converted = self._apply_unit_conversion_if_enabled(df_filtered, filters)
+        
+        if df_converted.empty:
+            self.show_warning("No data remaining after unit conversion.")
+            return
+        
         # Render map controls and visualization
-        self._render_map_interface(df_filtered)
+        self._render_map_interface(df_converted)
+    
+    def _apply_unit_conversion_if_enabled(
+        self,
+        df: pd.DataFrame,
+        filters: Dict[str, Any]
+    ) -> pd.DataFrame:
+        """Apply unit conversion if enabled in filters."""
+        
+        unit_mgr = st.session_state.get('unit_manager')
+        
+        if unit_mgr and 'unit_config' in filters:
+            unit_config = unit_mgr.get_unit_config_from_filters(filters)
+            df_converted, _ = unit_mgr.apply_unit_conversion(
+                df,
+                unit_config,
+                section_title="Energy Flow Map"
+            )
+            return df_converted
+        
+        return df
     
     def _transform_data(self, df: pd.DataFrame) -> pd.DataFrame:
         """
@@ -205,10 +254,13 @@ class EnergyMapModule(BaseModule):
             )
             return
         
+        # ✅ Get unit for display (after conversion)
+        unit = df_map['unit'].iloc[0] if 'unit' in df_map.columns else "other"
+        
         # Show data summary
         st.metric(
             label="Total Flow Volume",
-            value=f"{df_map['value'].sum():.1f} PJ",
+            value=f"{df_map['value'].sum():.1f} {unit}",  # ✅ Use converted unit
             help="Sum of all flows for selected filters"
         )
         

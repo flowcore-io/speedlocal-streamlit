@@ -3,7 +3,7 @@ Base module class that all visualization modules inherit from.
 """
 
 from abc import ABC, abstractmethod
-from typing import Dict, Any
+from typing import Dict, Any, List, Optional
 import streamlit as st
 import pandas as pd
 
@@ -44,13 +44,24 @@ class BaseModule(ABC):
         Args:
             table_dfs: Dictionary of loaded DataFrames
             filters: Active filter settings
-            data_loader: DataLoaderManager instance for additional queries
         """
         pass
     
     @abstractmethod
-    def get_filter_config(self) -> Dict[str, Any]:
-        """Return configuration for filters specific to this module."""
+    def get_config(self) -> Dict[str, Any]:
+        """
+        Return configuration for this module.
+        
+        Configuration includes:
+        - apply_global_filters: Whether to apply global scenario filters
+        - apply_unit_conversion: Whether to show unit conversion controls
+        - show_module_filters: Whether to show additional filter options
+        - filterable_columns: List of columns that can be filtered
+        - default_columns: List of columns to filter by default
+        
+        Returns:
+            Dictionary of configuration settings
+        """
         pass
     
     def validate_data(self, table_dfs: Dict[str, pd.DataFrame]) -> bool:
@@ -130,7 +141,7 @@ class BaseModule(ABC):
                     desc_mapping[col]
                 ).fillna(df_with_desc[col])
         
-        return df_with_desc 
+        return df_with_desc
 
     def show_error(self, message: str) -> None:
         """Display error message."""
