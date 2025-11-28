@@ -117,11 +117,14 @@ class FlowMapRenderer:
         Create Folium map with flow visualization.
         
         Args:
-            flow_data: DataFrame with columns ['start', 'end', 'value']
+            flow_data: DataFrame with columns ['start', 'end', 'value', 'unit']
             
         Returns:
             Folium Map object
         """
+
+        unit = flow_data['unit'].iloc[0] if 'unit' in flow_data.columns and not flow_data.empty else "PJ"
+
         # Get map settings
         defaults = self.map_settings['map_defaults']
         line_styles = self.map_settings['line_styles']
@@ -207,8 +210,8 @@ class FlowMapRenderer:
             # Create popup
             popup_html = f"""
                 <div style='font-size:14px; line-height:1.6; width:150px;'>
-                    <strong>{a} → {b}</strong>: {round(a_to_b, 1)} PJ<br>
-                    <strong>{b} → {a}</strong>: {round(b_to_a, 1)} PJ
+                    <strong>{a} → {b}</strong>: {round(a_to_b, 1)}{unit}<br>
+                    <strong>{b} → {a}</strong>: {round(b_to_a, 1)}{unit}
                 </div>
             """
             

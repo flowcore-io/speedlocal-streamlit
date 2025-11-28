@@ -106,18 +106,18 @@ class UnitManager:
         """
         # Check if module wants unit conversion
         config = module.get_config()
-        st.write("DEBUG (UnitManager): config =", config) 
+        st.write("DEBUG: config =", config) 
 
         if not config.get('apply_unit_conversion', False):
             return None
         
         # Get module key
         module_key = module.name.replace(" ", "_").lower()
-        st.write("DEBUG (UnitManager): module_key =", module_key)
+        # st.write("DEBUG (UnitManager): module_key =", module_key)
         
         # Detect available categories from data
         available_categories = self.get_active_unit_categories(module_key, table_dfs)
-        st.write("DEBUG (UnitManager): available_categories =", available_categories)
+        # st.write("DEBUG (UnitManager): available_categories =", available_categories)
 
         if not available_categories:
             st.warning("No unit categories detected in data")
@@ -333,8 +333,8 @@ class UnitManager:
         
         default_units = converter.get_default_target_units()
         if default_units:
-            with st.expander("ℹ️ Unit Conversion Settings", expanded=False):
-                st.markdown("**Default target units:**")
+            with st.expander("ℹ️ Default Units", expanded=False):
+                # st.markdown("**Default target units:**")
                 for category, unit in default_units.items():
                     st.text(f"  • {category}: {unit}")
                 st.info(
