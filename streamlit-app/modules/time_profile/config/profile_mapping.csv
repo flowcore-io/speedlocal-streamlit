@@ -1,0 +1,10 @@
+table,label,plot_group,color
+energy_subannual,Biogas CHP,production,
+energy_subannual,Biogas CHP,production,
+energy_subannual,Biomass boiler,production,
+energy_subannual,Coal CHP,production,
+energy_subannual,Electric boiler,production,
+energy_subannual,Electricity transmission,production,
+energy_subannual,Oil boiler,production,
+energy_subannual,Onshore wind,production,
+energy_subannual,Peak oil engine,production,

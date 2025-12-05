@@ -158,3 +158,226 @@ class BaseModule(ABC):
     def show_success(self, message: str) -> None:
         """Display success message."""
         st.success(f"[{self.name}] {message}")
+    
+    def _apply_unit_conversion(
+        self,
+        df: pd.DataFrame,
+        filters: Dict[str, Any]
+    ) -> pd.DataFrame:
+        """
+        Apply unit conversion if enabled in module config.
+        Standardizes the pattern used across all modules.
+        
+        Args:
+            df: DataFrame to convert
+            filters: Filters containing unit_config
+            
+        Returns:
+            Converted DataFrame or original if conversion not enabled/available
+        """
+        if df.empty:
+            return df
+        
+        # Check if module wants unit conversion
+        config = self.get_config()
+        if not config.get('apply_unit_conversion', False):
+            return df
+        
+        # Get unit manager from session
+        unit_mgr = st.session_state.get('unit_manager')
+        
+        if not unit_mgr or 'unit_config' not in filters:
+            return df
+        
+        # Apply conversion
+        unit_config = unit_mgr.get_unit_config_from_filters(filters)
+        df_converted, _ = unit_mgr.apply_unit_conversion(
+            df,
+            unit_config,
+            section_title=self.name
+        )
+        
+        return df_converted
+    
+    def _get_unit_label(self, df: pd.DataFrame) -> str:
+        """
+        Extract unit label from dataframe for axis labels.
+        Checks both 'unit' and 'cur' columns.
+        
+        Args:
+            df: DataFrame with unit/cur columns
+            
+        Returns:
+            String representing units (e.g., 't', 'GJ', 'MKr25')
+        """
+        if df.empty:
+            return 'value'
+        
+        units = []
+        
+        # Check unit column
+        if 'unit' in df.columns:
+            df_units = df['unit'].dropna().unique()
+            units.extend([u for u in df_units if str(u).upper() != 'NA'])
+        
+        # Check currency column
+        if 'cur' in df.columns:
+            df_curs = df['cur'].dropna().unique()
+            units.extend([c for c in df_curs if str(c).upper() != 'NA'])
+        
+        if not units:
+            return 'value'
+        elif len(units) == 1:
+            return str(units[0])
+        else:
+            return ', '.join(sorted(set(str(u) for u in units)))
+    
+    def _render_unit_controls(
+        self,
+        table_dfs: Dict[str, pd.DataFrame],
+        filters: Dict[str, Any],
+        expanded: bool = False
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Render unit conversion controls if enabled in module config.
+        
+        Args:
+            table_dfs: All available tables
+            filters: Current filters (currently unused, reserved for state restoration)
+            expanded: Whether expander should be open by default
+        
+        Returns:
+            Unit config dict or None if not applicable
+        """
+        # Check if module wants unit conversion
+        config = self.get_config()
+        if not config.get('apply_unit_conversion', False):
+            return None
+        
+        # Get unit manager from session
+        unit_mgr = st.session_state.get('unit_manager')
+        
+        if not unit_mgr:
+            return None
+        
+        # Render controls
+        unit_config = unit_mgr.render_unit_controls_if_enabled(
+            module=self,
+            table_dfs=table_dfs,
+            expanded=expanded
+        )
+        
+        return unit_config
+
+class BaseVisualizationModule(BaseModule):
+    """
+    Standard pattern for visualization modules.
+    
+    Provides a consistent render flow:
+    1. Validate data
+    2. Render unit controls
+    3. Load and prepare data
+    4. Apply filters
+    5. Apply unit conversion
+    6. Render visualization
+    
+    Subclasses must implement:
+    - _load_and_prepare_data()
+    - _render_visualization()
+    """
+    
+    def render(
+        self,
+        table_dfs: Dict[str, pd.DataFrame],
+        filters: Dict[str, Any]
+    ) -> None:
+        """
+        Standard render flow for visualization modules.
+        
+        Args:
+            table_dfs: Dictionary of loaded DataFrames
+            filters: Active filter settings
+        """
+        # 1. Validate data
+        if not self.validate_data(table_dfs):
+            self.show_error("Required data tables not available.")
+            return
+        
+        # 2. Render unit controls (if enabled in config)
+        unit_config = self._render_unit_controls(table_dfs, filters, expanded=False)
+        if unit_config:
+            filters['unit_config'] = unit_config
+        
+        st.divider()
+        
+        # 3. Show conversion summary (if unit conversion is enabled)
+        # if unit_config:
+        #     unit_mgr = st.session_state.get('unit_manager')
+        #     if unit_mgr:
+        #         unit_mgr.show_conversion_summary()
+        
+        # 4. Load and prepare data (module-specific)
+        df = self._load_and_prepare_data(table_dfs)
+        
+        if df is None or df.empty:
+            self.show_warning("No data available after loading.")
+            return
+        
+        # 5. Apply filters
+        df = self._apply_filters(df, filters)
+        
+        if df.empty:
+            self.show_warning("No data available after applying filters.")
+            return
+        
+        # 6. Apply unit conversion (if enabled)
+        df = self._apply_unit_conversion(df, filters)
+        
+        if df.empty:
+            self.show_warning("No data remaining after unit conversion.")
+            return
+        
+        # 7. Render visualization (module-specific)
+        self._render_visualization(df, filters)
+    
+    @abstractmethod
+    def _load_and_prepare_data(
+        self,
+        table_dfs: Dict[str, pd.DataFrame]
+    ) -> pd.DataFrame:
+        """
+        Load and prepare data for visualization.
+        
+        This is where modules should:
+        - Get their required tables
+        - Combine multiple tables if needed
+        - Apply initial filtering (like attr='f_in')
+        - Apply description mappings
+        
+        Args:
+            table_dfs: Dictionary of available tables
+            
+        Returns:
+            Prepared DataFrame ready for filtering and visualization
+        """
+        pass
+    
+    @abstractmethod
+    def _render_visualization(
+        self,
+        df: pd.DataFrame,
+        filters: Dict[str, Any]
+    ) -> None:
+        """
+        Render the actual visualization.
+        
+        This is where modules should:
+        - Create plots
+        - Render interactive controls
+        - Display results
+        
+        Args:
+            df: Filtered and converted DataFrame
+            filters: Active filters (for reference)
+        """
+        pass

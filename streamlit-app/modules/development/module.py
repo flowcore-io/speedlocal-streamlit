@@ -31,8 +31,8 @@ class DevelopmentModule(BaseModule):
         return {
             "apply_global_filters": True,
             "apply_unit_conversion": False,
-            "show_module_filters": False,
-            "filterable_columns": ['scen', 'year'],
+            "show_module_filters": True,
+            "filterable_columns": ['scen', 'year', 'all_ts', 'prc'],
             "default_columns": []
         }
     
@@ -50,10 +50,11 @@ class DevelopmentModule(BaseModule):
         desc_df = self._get_desc_df()
         
         # Create tabs
-        debug_tab, desc_tab, data_tab = st.tabs([
+        debug_tab, desc_tab, data_tab, plot_test_tab = st.tabs([
             "🔍 Filter Debug", 
             "📋 Description Tables", 
-            "📊 Data Inspector"
+            "📊 Data Inspector",
+            "🧪 Plot Tester"
         ])
         
         with debug_tab:
@@ -64,6 +65,9 @@ class DevelopmentModule(BaseModule):
 
         with data_tab:
             self._render_data_inspector(table_dfs, filters)
+        
+        with plot_test_tab:  # NEW TAB
+            self._render_plot_tester(table_dfs)
     
     def _render_filter_debug(self, table_dfs: Dict[str, pd.DataFrame], filters: Dict[str, Any]) -> None:
         """Render filter debugging information."""
@@ -161,3 +165,183 @@ class DevelopmentModule(BaseModule):
             st.subheader("Sample Data")
             n_rows = st.slider("Number of rows to display", 5, 100, 10)
             st.dataframe(df_filtered.head(n_rows), use_container_width=True)
+    
+    def _render_plot_tester(self, table_dfs: Dict[str, pd.DataFrame]) -> None:
+        """Test the new create_figure method."""
+        st.subheader("🧪 Plot Method Tester")
+        
+        st.info("Test the new `create_figure()` method from TimesReportPlotter")
+        
+        # Table selector
+        if not table_dfs:
+            st.warning("No data tables available")
+            return
+        
+        selected_table = st.selectbox(
+            "Select table to plot:",
+            options=list(table_dfs.keys()),
+            key="plot_test_table"
+        )
+        
+        if not selected_table:
+            return
+        
+        df = table_dfs[selected_table]
+        
+        if df.empty:
+            st.warning(f"Table {selected_table} is empty")
+            return
+        
+        # Show dataframe info
+        st.write(f"**Table shape:** {df.shape}")
+        st.write(f"**Columns:** {', '.join(df.columns.tolist())}")
+        
+        # Let user pick columns
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            x_col = st.selectbox(
+                "X-axis column:",
+                options=df.columns.tolist(),
+                index=df.columns.tolist().index('year') if 'year' in df.columns else 0,
+                key="plot_test_x"
+            )
+        
+        with col2:
+            y_col = st.selectbox(
+                "Y-axis column:",
+                options=df.columns.tolist(),
+                index=df.columns.tolist().index('value') if 'value' in df.columns else 0,
+                key="plot_test_y"
+            )
+        
+        # Group column (optional)
+        group_cols = [col for col in df.columns if col not in [x_col, y_col]]
+        group_col = st.selectbox(
+            "Group by column (optional):",
+            options=['None'] + group_cols,
+            key="plot_test_group"
+        )
+        
+        # Scenario column (optional)
+        scenario_col = st.selectbox(
+            "Scenario column (optional):",
+            options=['None'] + group_cols,
+            index=group_cols.index('scen') + 1 if 'scen' in group_cols else 0,
+            key="plot_test_scenario"
+        )
+        
+        # Plot type
+        plot_type = st.selectbox(
+            "Plot type:",
+            options=['bar', 'line'],
+            key="plot_test_type"
+        )
+        
+        # Stack option for bars
+        stack = st.checkbox("Stack bars", value=True, key="plot_test_stack") if plot_type == 'bar' else False
+        
+        # Build plot spec
+        plot_spec = {
+            'x_col': x_col,
+            'y_col': y_col,
+            'title': f'Test Plot: {selected_table}',
+            'height': 600,
+            'barmode': 'stack' if stack else 'group'
+        }
+        
+        # Add series
+        series_spec = {
+            'type': plot_type,
+            'stack': stack,
+            'y_axis': 'primary'
+        }
+        
+        if group_col != 'None':
+            series_spec['group_col'] = group_col
+        
+        plot_spec['series'] = [series_spec]
+        
+        # Add scenario if selected
+        if scenario_col != 'None':
+            plot_spec['scenario_col'] = scenario_col
+        
+        # Add axes config
+        unit_label = self._get_unit_label(df) if hasattr(self, '_get_unit_label') else 'value'
+        plot_spec['axes'] = {
+            'primary': {
+                'title': unit_label,
+                'side': 'left',
+                'showgrid': False
+            }
+        }
+        
+        # Show the spec being used
+        with st.expander("📋 Plot Specification", expanded=False):
+            st.json(plot_spec)
+        
+        # Create the plot
+        st.subheader("Generated Plot")
+        
+        try:
+            from utils._plotting import TimesReportPlotter
+            
+            plotter = TimesReportPlotter(df)
+            
+            # Try the NEW method
+            st.write("**Using:** `create_figure()` method")
+            fig = plotter.create_figure(plot_spec)
+            
+            if fig:
+                st.plotly_chart(fig, use_container_width=True)
+                st.success("✅ Plot created successfully with new `create_figure()` method!")
+            else:
+                st.error("Plot returned None - check if data is empty after filtering")
+        
+        except Exception as e:
+            st.error(f"Error creating plot: {str(e)}")
+            st.exception(e)
+        
+        # Comparison with old method
+        st.divider()
+        st.subheader("Compare with Legacy Method")
+        
+        if st.button("🔄 Create with legacy method"):
+            try:
+                from utils._plotting import TimesReportPlotter
+                
+                plotter = TimesReportPlotter(df)
+                
+                # Use old method
+                if plot_type == 'bar':
+                    st.write("**Using:** `stacked_bar()` method")
+                    fig_old = plotter.stacked_bar(
+                        x_col=x_col,
+                        y_col=y_col,
+                        group_col=group_col if group_col != 'None' else 'sector',
+                        scenario_col=scenario_col if scenario_col != 'None' else None,
+                        filter_dict=None,
+                        title=f"Legacy: {selected_table}",
+                        height=600
+                    )
+                else:
+                    st.write("**Using:** `line_plot()` method")
+                    fig_old = plotter.line_plot(
+                        x_col=x_col,
+                        y_col=y_col,
+                        group_col=group_col if group_col != 'None' else 'sector',
+                        scenario_col=scenario_col if scenario_col != 'None' else None,
+                        filter_dict=None,
+                        title=f"Legacy: {selected_table}",
+                        height=600
+                    )
+                
+                if fig_old:
+                    st.plotly_chart(fig_old, use_container_width=True)
+                    st.success("✅ Legacy method also works!")
+                else:
+                    st.error("Legacy method returned None")
+            
+            except Exception as e:
+                st.error(f"Error with legacy method: {str(e)}")
+                st.exception(e)
