@@ -5,9 +5,13 @@ Central registry for all app modules.
 from typing import Dict
 from modules.base_module import BaseModule
 from modules.key_insights.module import KeyInsightsModule
-from modules.energy_emissions.module import EnergyEmissionsModule
 from modules.energy_emissions_v2.module import EnergyEmissionsModuleV2
+from modules.energy_emissions_v3.module import EnergyEmissionsModuleV3
+
 from modules.energy_map.module import EnergyMapModule
+from modules.time_profile.module import TimeProfileModule
+from modules.time_profile_v2.module import TimeProfileModuleV2
+
 
 
 from modules.development.module import DevelopmentModule
@@ -29,18 +33,26 @@ class ModuleRegistry:
         # self.register_module("energy_emissions", EnergyEmissionsModule())
         
         # Register Energy/Emissions module (order=1)
-        self.register_module("energy_&_emissions", EnergyEmissionsModuleV2())
+        self.register_module("energy_&_emissions_old", EnergyEmissionsModuleV2())
+        
+        # Register Energy/Emissions module (order=1)
+        self.register_module("energy_&_emissions", EnergyEmissionsModuleV3())
 
         self.register_module("energy_flow_map", EnergyMapModule())
 
+        # Register Time Profile module (order=3)
+        self.register_module("time_profile", TimeProfileModule())
+
+        # Register Time Profile module (order=3)
+        # self.register_module("time_profile_v2", TimeProfileModuleV2())
         # Future modules can be added here:
         # self.register_module("land_use", LandUseModule())
         # self.register_module("economics", EconomicsModule())
-        # self.register_module("daynite", DayNiteModule())
+
 
         # Register Development module (order=999 = always last)
         
-        self.register_module("development", DevelopmentModule())
+        # self.register_module("development", DevelopmentModule())
 
     def register_module(self, key: str, module: BaseModule) -> None:
         """
