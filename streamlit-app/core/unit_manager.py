@@ -104,9 +104,9 @@ class UnitManager:
         Returns:
             Dict with 'selected_categories' and 'target_units' or None
         """
-        # Check if module wants unit conversion
+        # Check module config for filters and unit conversion
         config = module.get_config()
-        st.write("DEBUG: config =", config) 
+        # st.write("DEBUG: config =", config) 
 
         if not config.get('apply_unit_conversion', False):
             return None
@@ -143,8 +143,6 @@ class UnitManager:
                     for cat in available_categories
                 ])
                 st.markdown(f"**Default units:** {defaults_text}")
-            
-            st.divider()
             
             # Render controls
             unit_config = self.render_module_unit_controls(

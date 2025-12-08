@@ -9,7 +9,7 @@ import pandas as pd
 from core.session_manager import SessionManager
 from core.data_loader import DataLoaderManager, create_description_mapping
 from core.filter_manager import FilterManager
-from core.unit_manager import UnitManager  # ✅ NEW IMPORT
+from core.unit_manager import UnitManager  
 from config.module_registry import ModuleRegistry
 from components.sidebar import render_sidebar
 from utils.unit_converter import UnitConverter, ExclusionInfo
@@ -50,7 +50,7 @@ def main():
         session_mgr.clear_pattern('filter')
         session_mgr.clear_pattern('loader')
         session_mgr.clear_pattern('desc')
-        session_mgr.clear_pattern('unit')  # ✅ Clear unit manager too
+        session_mgr.clear_pattern('unit')  
         st.rerun()
     
     # Initialize data loader if not in session
@@ -106,7 +106,7 @@ def main():
     
     filter_manager = session_mgr.get('filter_manager')
     
-    # ✅ Initialize unit manager if not in session
+    # Initialize unit manager if not in session
     if not session_mgr.has('unit_manager'):
         unit_manager = UnitManager(table_dfs)
         session_mgr.set('unit_manager', unit_manager)
@@ -137,7 +137,7 @@ def main():
         
         # Get active module's config
         active_module = module_registry.get_module(st.session_state.active_module_key)
-        config = active_module.get_config()  # ✅ CHANGED from get_filter_config
+        config = active_module.get_config()  
 
     # Initialize selected tab in session state
     if 'selected_tab_index' not in st.session_state:
@@ -171,7 +171,7 @@ def main():
         # Render only the selected module
         try:
             # Get module-specific config
-            config = selected_module.get_config()  # ✅ CHANGED from get_filter_config
+            config = selected_module.get_config()  
             
             # Check if module wants global filters applied
             apply_global = config.get('apply_global_filters', True)

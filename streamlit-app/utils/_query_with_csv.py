@@ -54,6 +54,11 @@ class PandasDFCreator:
 
             if pd.notna(val) and str(val).lower() != 'nan':
                 val_str = str(val)
+                if val_str.startswith("!"):
+                    excluded_value = val_str[1:].strip()  # Remove the !
+                    conditions.append(f"tr.{col} != '{excluded_value}'")
+                    continue
+                
                 if val_str.startswith("^") or any(x in val_str for x in ["(", "|", ")", ".*", "$", "[", "]", "?"]):
                     patterns = [p.strip() for p in val_str.split(",") if p.strip()]
                     sub_conditions = []

@@ -55,7 +55,7 @@ class EnergyEmissionsModuleV2(BaseModule):
     
     def __init__(self):
         super().__init__(
-            name="Energy & Emissions",
+            name="Energy & Emissions old",
             description="Annual reporting with unit conversion support",
             order=1,
             enabled=True
@@ -70,7 +70,7 @@ class EnergyEmissionsModuleV2(BaseModule):
         return {
             "apply_global_filters": True,
             "apply_unit_conversion": True,
-            "show_module_filters": False,
+            "show_module_filters": True,
             "filterable_columns": ['subsector', 'comgroup', 'year'],
             "default_columns": []
         }
@@ -128,6 +128,8 @@ class EnergyEmissionsModuleV2(BaseModule):
         config = self.SECTION_CONFIGS[section_key]
         unique_section_key = f"{section_key}"
         df = table_dfs.get(config['df_key'])
+                
+        st.write("DEBUG: config =", config) 
         
         if df is None or df.empty:
             self.show_error(f"{config['title']} data not available.")

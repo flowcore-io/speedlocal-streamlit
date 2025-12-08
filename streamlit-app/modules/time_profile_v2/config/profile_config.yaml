@@ -1,0 +1,48 @@
+# Time Profile Module Configuration
+
+plot_groups:
+  production:
+    plot_type: bar
+    stack: true
+    y_axis: primary
+    opacity: 0.85
+    
+  storage_in:
+    plot_type: bar
+    stack: true
+    y_axis: primary
+    opacity: 0.85
+    
+  storage_out:
+    plot_type: bar
+    stack: true
+    y_axis: primary
+    opacity: 0.85
+    
+  storage_soc:
+    plot_type: area
+    fill: tozeroy
+    y_axis: secondary
+    opacity: 0.2
+    line_width: 0
+    fillcolor: rgba(128,128,128,0.2)
+    
+  price:
+    plot_type: line
+    y_axis: secondary
+    dash: dash
+    width: 1
+    color: black
+
+y_axes:
+  primary:
+    title: "Value"  # Units appended dynamically by module
+    side: left
+    showgrid: false
+    
+  secondary:
+    title: "Secondary Value"  # Units appended dynamically by module
+    side: right
+    overlaying: y
+    showgrid: false
+    align_zero: true  # Align zero points between primary and secondary axes

@@ -40,7 +40,7 @@ class EnergyMapModule(BaseModule):
         return {
             "apply_global_filters": True,
             "apply_unit_conversion": True,  
-            "show_module_filters": True,
+            "show_module_filters": False,
             "filterable_columns": ['year', 'com'],
             "default_columns": []
         }
