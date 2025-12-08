@@ -4,7 +4,7 @@ Development module for debugging.
 
 import streamlit as st
 import pandas as pd
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from pathlib import Path
 import sys
 
@@ -50,11 +50,11 @@ class DevelopmentModule(BaseModule):
         desc_df = self._get_desc_df()
         
         # Create tabs
-        debug_tab, desc_tab, data_tab, plot_test_tab = st.tabs([
+        debug_tab, desc_tab, data_tab = st.tabs([
             "🔍 Filter Debug", 
             "📋 Description Tables", 
-            "📊 Data Inspector",
-            "🧪 Plot Tester"
+            "📊 Data Inspector"
+            # "🧪 Plot Tester"
         ])
         
         with debug_tab:
@@ -66,8 +66,8 @@ class DevelopmentModule(BaseModule):
         with data_tab:
             self._render_data_inspector(table_dfs, filters)
         
-        with plot_test_tab:  # NEW TAB
-            self._render_plot_tester(table_dfs)
+        # with plot_test_tab: 
+        #     self._render_plot_tester(table_dfs)
     
     def _render_filter_debug(self, table_dfs: Dict[str, pd.DataFrame], filters: Dict[str, Any]) -> None:
         """Render filter debugging information."""
@@ -165,183 +165,396 @@ class DevelopmentModule(BaseModule):
             st.subheader("Sample Data")
             n_rows = st.slider("Number of rows to display", 5, 100, 10)
             st.dataframe(df_filtered.head(n_rows), use_container_width=True)
-    
-    def _render_plot_tester(self, table_dfs: Dict[str, pd.DataFrame]) -> None:
-        """Test the new create_figure method."""
-        st.subheader("🧪 Plot Method Tester")
+            st.divider()
+            st.subheader("📊 Generate Profile Mapping Template")
+            
+            st.info(
+                "This tool generates a unique combination of data identifiers "
+                "for time profile visualization configuration."
+            )
+            
+            # Check if this looks like a time series table
+            has_timeseries = 'all_ts' in df_filtered.columns
+            
+            if has_timeseries:
+                self._render_profile_mapping_generator(df_filtered, selected_table)
+            else:
+                st.warning(f"Table '{selected_table}' doesn't have 'all_ts' column. Select a time series table.")
+                
+    def _render_profile_mapping_generator(
+        self,
+        df: pd.DataFrame,
+        table_name: str
+    ) -> None:
+        """
+        Generate profile_mapping.csv template from time series data.
         
-        st.info("Test the new `create_figure()` method from TimesReportPlotter")
+        Uses existing 'label' column from data and applies description mapping.
+        """
+        st.write("**Configuration:**")
         
-        # Table selector
-        if not table_dfs:
-            st.warning("No data tables available")
+        # Check if label column exists
+        if 'label' not in df.columns:
+            st.error("This table doesn't have a 'label' column. Cannot generate profile mapping.")
             return
         
-        selected_table = st.selectbox(
-            "Select table to plot:",
-            options=list(table_dfs.keys()),
-            key="plot_test_table"
-        )
+        # Define columns to exclude from grouping
+        default_exclude = ['scen', 'value', 'file_id', 'year', 'all_ts', 'unit', 'cur']
         
-        if not selected_table:
-            return
+        # Let user choose which columns to include
+        available_cols = [col for col in df.columns if col not in default_exclude]
         
-        df = table_dfs[selected_table]
-        
-        if df.empty:
-            st.warning(f"Table {selected_table} is empty")
-            return
-        
-        # Show dataframe info
-        st.write(f"**Table shape:** {df.shape}")
-        st.write(f"**Columns:** {', '.join(df.columns.tolist())}")
-        
-        # Let user pick columns
         col1, col2 = st.columns(2)
         
         with col1:
-            x_col = st.selectbox(
-                "X-axis column:",
-                options=df.columns.tolist(),
-                index=df.columns.tolist().index('year') if 'year' in df.columns else 0,
-                key="plot_test_x"
+            grouping_cols = st.multiselect(
+                "Columns to include in mapping:",
+                options=available_cols,
+                default=available_cols,
+                key="profile_mapping_cols",
+                help="Select which columns to include in the profile mapping"
             )
         
         with col2:
-            y_col = st.selectbox(
-                "Y-axis column:",
-                options=df.columns.tolist(),
-                index=df.columns.tolist().index('value') if 'value' in df.columns else 0,
-                key="plot_test_y"
+            # Default plot group
+            default_plot_group = st.text_input(
+                "Default plot group:",
+                value="production",
+                key="profile_mapping_plot_group",
+                help="Default plot group for all series (can be edited in CSV)"
             )
         
-        # Group column (optional)
-        group_cols = [col for col in df.columns if col not in [x_col, y_col]]
-        group_col = st.selectbox(
-            "Group by column (optional):",
-            options=['None'] + group_cols,
-            key="plot_test_group"
-        )
+        if not grouping_cols:
+            st.warning("Select at least one column")
+            return
         
-        # Scenario column (optional)
-        scenario_col = st.selectbox(
-            "Scenario column (optional):",
-            options=['None'] + group_cols,
-            index=group_cols.index('scen') + 1 if 'scen' in group_cols else 0,
-            key="plot_test_scenario"
-        )
-        
-        # Plot type
-        plot_type = st.selectbox(
-            "Plot type:",
-            options=['bar', 'line'],
-            key="plot_test_type"
-        )
-        
-        # Stack option for bars
-        stack = st.checkbox("Stack bars", value=True, key="plot_test_stack") if plot_type == 'bar' else False
-        
-        # Build plot spec
-        plot_spec = {
-            'x_col': x_col,
-            'y_col': y_col,
-            'title': f'Test Plot: {selected_table}',
-            'height': 600,
-            'barmode': 'stack' if stack else 'group'
-        }
-        
-        # Add series
-        series_spec = {
-            'type': plot_type,
-            'stack': stack,
-            'y_axis': 'primary'
-        }
-        
-        if group_col != 'None':
-            series_spec['group_col'] = group_col
-        
-        plot_spec['series'] = [series_spec]
-        
-        # Add scenario if selected
-        if scenario_col != 'None':
-            plot_spec['scenario_col'] = scenario_col
-        
-        # Add axes config
-        unit_label = self._get_unit_label(df) if hasattr(self, '_get_unit_label') else 'value'
-        plot_spec['axes'] = {
-            'primary': {
-                'title': unit_label,
-                'side': 'left',
-                'showgrid': False
-            }
-        }
-        
-        # Show the spec being used
-        with st.expander("📋 Plot Specification", expanded=False):
-            st.json(plot_spec)
-        
-        # Create the plot
-        st.subheader("Generated Plot")
-        
+        # Generate unique combinations
         try:
-            from utils._plotting import TimesReportPlotter
-            
-            plotter = TimesReportPlotter(df)
-            
-            # Try the NEW method
-            st.write("**Using:** `create_figure()` method")
-            fig = plotter.create_figure(plot_spec)
-            
-            if fig:
-                st.plotly_chart(fig, use_container_width=True)
-                st.success("✅ Plot created successfully with new `create_figure()` method!")
+            # Get unique combinations
+            unique_combinations = df[grouping_cols].drop_duplicates().reset_index(drop=True)
+
+            # ALWAYS initialize label_with_desc (fallback to original)
+            unique_combinations['label_with_desc'] = unique_combinations['label']
+
+            # Apply description mapping to the 'label' column
+            desc_mapping = self._get_desc_mapping()
+
+            if desc_mapping and 'label' in unique_combinations.columns:
+                # Get label source from mapping_db_views.csv
+                label_source = self._detect_label_source_from_mapping(table_name)
+                
+                if label_source:
+                    st.info(f"📋 Label source: **{label_source}**")
+                    
+                    if label_source in desc_mapping:
+                        # Apply the description mapping
+                        unique_combinations['label_with_desc'] = unique_combinations['label'].map(
+                            desc_mapping[label_source]
+                        ).fillna(unique_combinations['label'])  # ← This overwrites the fallback
+                        
+                        # Count how many were mapped
+                        mapped_count = unique_combinations['label_with_desc'].ne(unique_combinations['label']).sum()
+                        st.success(f"✅ Applied {label_source} descriptions ({mapped_count}/{len(unique_combinations)} labels mapped)")
+                        
+                        # DEBUG: Show what we got
+                        st.write("**Sample results:**")
+                        st.dataframe(unique_combinations[['label', 'label_with_desc']].head(3))
+                    else:
+                        st.warning(f"⚠️ No description mapping available for '{label_source}'")
+                else:
+                    st.error(f"❌ Could not determine label source from mapping_db_views.csv for table '{table_name}'")
             else:
-                st.error("Plot returned None - check if data is empty after filtering")
+                st.warning("No description mapping available")
+
+            # Prepare final mapping dataframe
+            n_rows = len(unique_combinations)
+
+            mapping_df = pd.DataFrame({
+                'table': [table_name] * n_rows,
+                'label': unique_combinations['label_with_desc'].tolist(),  # ← Make sure this is here
+                'plot_group': [default_plot_group] * n_rows,
+                'color': [''] * n_rows
+            })
+
+            # Add ALL the original columns as-is (except 'label' which we already added with descriptions)
+            for col in grouping_cols:
+                if col != 'label':  # ← SKIP 'label' - we already added it with descriptions
+                    mapping_df[col] = unique_combinations[col].tolist()
+            
+            # Show preview
+            st.write(f"**Generated {len(mapping_df)} unique series:**")
+            st.dataframe(mapping_df, use_container_width=True)
+            
+            # Show statistics
+            col_a, col_b = st.columns(2)
+            with col_a:
+                st.metric("Unique Series", len(mapping_df))
+            with col_b:
+                if 'label' in grouping_cols:
+                    st.metric("Unique Labels", unique_combinations['label'].nunique())
+            
+            # Download button
+            csv_data = mapping_df.to_csv(index=False)
+            
+            st.download_button(
+                label="📥 Download as profile_mapping.csv",
+                data=csv_data,
+                file_name=f"profile_mapping_{table_name}.csv",
+                mime="text/csv",
+                help="Download this CSV and place it in your module's config folder"
+            )
+            
+            st.success(
+                f"✅ Save the downloaded file as: "
+                f"`modules/time_profile_v2/config/profile_mapping.csv`"
+            )
+            
+            # Show instructions
+            with st.expander("📖 How to use this file", expanded=False):
+                st.markdown("""
+                ### Instructions:
+                
+                1. **Download** the CSV file using the button above
+                2. **Edit** the file (optional):
+                - The `label` column already has descriptions applied
+                - Update `plot_group` to match your `profile_config.yaml` groups
+                - Optionally add colors
+                3. **Save** it as `modules/time_profile_v2/config/profile_mapping.csv`
+                4. **Reload** the app to use the new mapping
+                
+                ### Column Meanings:
+                
+                - **table**: Source table name
+                - **label**: Display name (has description applied)
+                - **plot_group**: Which plot group this belongs to (EDIT to match profile_config.yaml)
+                - **color**: Optional color specification
+                - **Other columns**: Original identifying columns for matching data
+                
+                The `label` column is what will appear in your time series plot legends.
+                """)
         
         except Exception as e:
-            st.error(f"Error creating plot: {str(e)}")
+            st.error(f"Error generating mapping: {str(e)}")
             st.exception(e)
+    
+    def _detect_label_source_from_mapping(self, table_name: str) -> Optional[str]:
+        """
+        Determine what column the 'label' comes from by reading mapping_db_views.csv
         
-        # Comparison with old method
-        st.divider()
-        st.subheader("Compare with Legacy Method")
-        
-        if st.button("🔄 Create with legacy method"):
-            try:
-                from utils._plotting import TimesReportPlotter
-                
-                plotter = TimesReportPlotter(df)
-                
-                # Use old method
-                if plot_type == 'bar':
-                    st.write("**Using:** `stacked_bar()` method")
-                    fig_old = plotter.stacked_bar(
-                        x_col=x_col,
-                        y_col=y_col,
-                        group_col=group_col if group_col != 'None' else 'sector',
-                        scenario_col=scenario_col if scenario_col != 'None' else None,
-                        filter_dict=None,
-                        title=f"Legacy: {selected_table}",
-                        height=600
-                    )
-                else:
-                    st.write("**Using:** `line_plot()` method")
-                    fig_old = plotter.line_plot(
-                        x_col=x_col,
-                        y_col=y_col,
-                        group_col=group_col if group_col != 'None' else 'sector',
-                        scenario_col=scenario_col if scenario_col != 'None' else None,
-                        filter_dict=None,
-                        title=f"Legacy: {selected_table}",
-                        height=600
-                    )
-                
-                if fig_old:
-                    st.plotly_chart(fig_old, use_container_width=True)
-                    st.success("✅ Legacy method also works!")
-                else:
-                    st.error("Legacy method returned None")
+        Returns the column name (e.g., 'subsector', 'techgroup') or None
+        """
+        try:
+            # Try to find the mapping CSV
+            mapping_csv_path = Path("inputs/mapping_db_views.csv")
             
-            except Exception as e:
-                st.error(f"Error with legacy method: {str(e)}")
-                st.exception(e)
+            if not mapping_csv_path.exists():
+                return None
+            
+            # Read the mapping CSV
+            mapping_df = pd.read_csv(mapping_csv_path)
+            
+            # Find rows for this table
+            table_rows = mapping_df[mapping_df['table'] == table_name]
+            
+            if table_rows.empty:
+                return None
+            
+            # Get the label column specification
+            label_spec = table_rows['label'].dropna().unique()
+            
+            if len(label_spec) > 0:
+                label_source = str(label_spec[0]).strip().lower()
+                
+                # Common label sources
+                valid_sources = [
+                    'subsector', 'sector', 'techgroup', 'comgroup', 
+                    'prc', 'com', 'service', 'topic', 'attr'
+                ]
+                
+                if label_source in valid_sources:
+                    return label_source
+            
+            return None
+            
+        except Exception as e:
+            st.error(f"Error reading mapping CSV: {e}")
+            return None
+    # def _render_plot_tester(self, table_dfs: Dict[str, pd.DataFrame]) -> None:
+    #     """Test the new create_figure method."""
+    #     st.subheader("🧪 Plot Method Tester")
+        
+    #     st.info("Test the new `create_figure()` method from TimesReportPlotter")
+        
+    #     # Table selector
+    #     if not table_dfs:
+    #         st.warning("No data tables available")
+    #         return
+        
+    #     selected_table = st.selectbox(
+    #         "Select table to plot:",
+    #         options=list(table_dfs.keys()),
+    #         key="plot_test_table"
+    #     )
+        
+    #     if not selected_table:
+    #         return
+        
+    #     df = table_dfs[selected_table]
+        
+    #     if df.empty:
+    #         st.warning(f"Table {selected_table} is empty")
+    #         return
+        
+    #     # Show dataframe info
+    #     st.write(f"**Table shape:** {df.shape}")
+    #     st.write(f"**Columns:** {', '.join(df.columns.tolist())}")
+        
+    #     # Let user pick columns
+    #     col1, col2 = st.columns(2)
+        
+    #     with col1:
+    #         x_col = st.selectbox(
+    #             "X-axis column:",
+    #             options=df.columns.tolist(),
+    #             index=df.columns.tolist().index('year') if 'year' in df.columns else 0,
+    #             key="plot_test_x"
+    #         )
+        
+    #     with col2:
+    #         y_col = st.selectbox(
+    #             "Y-axis column:",
+    #             options=df.columns.tolist(),
+    #             index=df.columns.tolist().index('value') if 'value' in df.columns else 0,
+    #             key="plot_test_y"
+    #         )
+        
+    #     # Group column (optional)
+    #     group_cols = [col for col in df.columns if col not in [x_col, y_col]]
+    #     group_col = st.selectbox(
+    #         "Group by column (optional):",
+    #         options=['None'] + group_cols,
+    #         key="plot_test_group"
+    #     )
+        
+    #     # Scenario column (optional)
+    #     scenario_col = st.selectbox(
+    #         "Scenario column (optional):",
+    #         options=['None'] + group_cols,
+    #         index=group_cols.index('scen') + 1 if 'scen' in group_cols else 0,
+    #         key="plot_test_scenario"
+    #     )
+        
+    #     # Plot type
+    #     plot_type = st.selectbox(
+    #         "Plot type:",
+    #         options=['bar', 'line'],
+    #         key="plot_test_type"
+    #     )
+        
+    #     # Stack option for bars
+    #     stack = st.checkbox("Stack bars", value=True, key="plot_test_stack") if plot_type == 'bar' else False
+        
+    #     # Build plot spec
+    #     plot_spec = {
+    #         'x_col': x_col,
+    #         'y_col': y_col,
+    #         'title': f'Test Plot: {selected_table}',
+    #         'height': 600,
+    #         'barmode': 'stack' if stack else 'group'
+    #     }
+        
+    #     # Add series
+    #     series_spec = {
+    #         'type': plot_type,
+    #         'stack': stack,
+    #         'y_axis': 'primary'
+    #     }
+        
+    #     if group_col != 'None':
+    #         series_spec['group_col'] = group_col
+        
+    #     plot_spec['series'] = [series_spec]
+        
+    #     # Add scenario if selected
+    #     if scenario_col != 'None':
+    #         plot_spec['scenario_col'] = scenario_col
+        
+    #     # Add axes config
+    #     unit_label = self._get_unit_label(df) if hasattr(self, '_get_unit_label') else 'value'
+    #     plot_spec['axes'] = {
+    #         'primary': {
+    #             'title': unit_label,
+    #             'side': 'left',
+    #             'showgrid': False
+    #         }
+    #     }
+        
+    #     # Show the spec being used
+    #     with st.expander("📋 Plot Specification", expanded=False):
+    #         st.json(plot_spec)
+        
+    #     # Create the plot
+    #     st.subheader("Generated Plot")
+        
+    #     try:
+    #         from utils._plotting import TimesReportPlotter
+            
+    #         plotter = TimesReportPlotter(df)
+            
+    #         # Try the NEW method
+    #         st.write("**Using:** `create_figure()` method")
+    #         fig = plotter.create_figure(plot_spec)
+            
+    #         if fig:
+    #             st.plotly_chart(fig, use_container_width=True)
+    #             st.success("✅ Plot created successfully with new `create_figure()` method!")
+    #         else:
+    #             st.error("Plot returned None - check if data is empty after filtering")
+        
+    #     except Exception as e:
+    #         st.error(f"Error creating plot: {str(e)}")
+    #         st.exception(e)
+        
+    #     # Comparison with old method
+    #     st.divider()
+    #     st.subheader("Compare with Legacy Method")
+        
+    #     if st.button("🔄 Create with legacy method"):
+    #         try:
+    #             from utils._plotting import TimesReportPlotter
+                
+    #             plotter = TimesReportPlotter(df)
+                
+    #             # Use old method
+    #             if plot_type == 'bar':
+    #                 st.write("**Using:** `stacked_bar()` method")
+    #                 fig_old = plotter.stacked_bar(
+    #                     x_col=x_col,
+    #                     y_col=y_col,
+    #                     group_col=group_col if group_col != 'None' else 'sector',
+    #                     scenario_col=scenario_col if scenario_col != 'None' else None,
+    #                     filter_dict=None,
+    #                     title=f"Legacy: {selected_table}",
+    #                     height=600
+    #                 )
+    #             else:
+    #                 st.write("**Using:** `line_plot()` method")
+    #                 fig_old = plotter.line_plot(
+    #                     x_col=x_col,
+    #                     y_col=y_col,
+    #                     group_col=group_col if group_col != 'None' else 'sector',
+    #                     scenario_col=scenario_col if scenario_col != 'None' else None,
+    #                     filter_dict=None,
+    #                     title=f"Legacy: {selected_table}",
+    #                     height=600
+    #                 )
+                
+    #             if fig_old:
+    #                 st.plotly_chart(fig_old, use_container_width=True)
+    #                 st.success("✅ Legacy method also works!")
+    #             else:
+    #                 st.error("Legacy method returned None")
+            
+    #         except Exception as e:
+    #             st.error(f"Error with legacy method: {str(e)}")
+    #             st.exception(e)
