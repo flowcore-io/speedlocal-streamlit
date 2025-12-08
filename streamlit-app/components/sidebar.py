@@ -26,7 +26,7 @@ def render_sidebar() -> dict:
     if connection_type == "Azure URL":
         db_source = st.sidebar.text_input(
             "Database URL:",
-            value="https://speedlocal.flowcore.app/api/duckdb/share/964bf3b5ed1ffb6a25cea72b85dc6dbe",
+            value="https://speedlocal.flowcore.app/api/duckdb/share/e693149c945d6f995f278e91e3fd10ae",
             help="Enter the Azure blob storage URL for the DuckDB database"
         )
         is_url = True
