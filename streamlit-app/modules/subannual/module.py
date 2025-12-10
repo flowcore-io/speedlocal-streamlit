@@ -38,7 +38,7 @@ class SubAnnualModule(BaseVisualizationModule):
         """Return module configuration."""
         return {
             "apply_global_filters": True,
-            "apply_unit_conversion": True,
+            "apply_unit_conversion": False,
             "show_module_filters": True,
             "filterable_columns": ['techgroup'],
             "default_columns": ['techgroup']
@@ -72,6 +72,8 @@ class SubAnnualModule(BaseVisualizationModule):
         # Labels are already mapped to descriptions by DataLoaderManager
         return df_combined
     
+    # subannual/module.py
+
     def _render_visualization(self, df: pd.DataFrame, filters: Dict) -> None:
         """Render interface."""
         st.header("Subannual Profile")
@@ -111,10 +113,6 @@ class SubAnnualModule(BaseVisualizationModule):
             self.show_warning("No data for selected filters.")
             return
         
-        if df_plot.empty:
-            self.show_warning("No data for selected filters.")
-            return
-        
         # Transform to wide format
         df_wide = self._transform_to_wide(df_plot)
         
@@ -122,8 +120,7 @@ class SubAnnualModule(BaseVisualizationModule):
             self.show_warning("No data after transformation.")
             return
         
-        # Show available columns for debugging
-        # Show available columns for debugging
+        # Debug info
         with st.expander("🔍 Debug Info", expanded=False):
             st.write("**DataFrame shape:**", df_wide.shape)
             st.write("**Columns:**", df_wide.columns.tolist())
@@ -132,7 +129,7 @@ class SubAnnualModule(BaseVisualizationModule):
             st.write("**Data columns:**", data_cols)
             st.write("**Number of series:**", len(data_cols))
 
-        # Get all data columns
+        # Get all data columns (technology names)
         data_cols = [col for col in df_wide.columns if col not in ['all_ts', 'scen', 'year']]
 
         if not data_cols:
@@ -140,26 +137,21 @@ class SubAnnualModule(BaseVisualizationModule):
             return
 
         # Create plot
-        st.subheader(f"Profile: {selected_scenario} — {selected_year} — {selected_region}")
+        # st.subheader(f"Profile: {selected_scenario} — {selected_year} — {selected_region}")
 
         try:
-            # Create simple categories dict (all columns in one group)
-            categories = {'production': data_cols}
-            
             # Get unit label
             unit_label = self._get_unit_label(df_plot)
-            unit_info = {'production': unit_label}
             
-            # Plot using stacked_timeseries
-            plotter = TimesReportPlotter(df_wide)
-            fig = plotter.plot(
-                method='stacked_timeseries',
-                time_col='all_ts',
-                categories=categories,
-                config=self.profile_config,
-                unit_info=unit_info,
+            # Build plot specification from profile_config.yaml
+            plot_spec = self._build_plot_spec_from_config(
+                data_cols=data_cols,
+                unit_label=unit_label,
                 title=f"Time Profile: {selected_scenario} — {selected_year} — {selected_region}"
             )
+
+            plotter = TimesReportPlotter(df_wide)
+            fig = plotter.create_figure(plot_spec)
             
             if fig:
                 st.plotly_chart(fig, use_container_width=True)
@@ -204,3 +196,72 @@ class SubAnnualModule(BaseVisualizationModule):
             'primary': self.profile_config['y_axes']['primary'],
             'secondary': self.profile_config['y_axes'].get('secondary')
         }
+    
+    # subannual/module.py - add this new method
+
+    def _build_plot_spec_from_config(
+        self, 
+        data_cols: List[str], 
+        unit_label: str,
+        title: str
+    ) -> Dict[str, Any]:
+        """
+        Build plot specification from profile_config.yaml.
+        
+        Args:
+            data_cols: List of column names to plot (technology names)
+            unit_label: Unit label for y-axis
+            title: Plot title
+        
+        Returns:
+            Plot specification dict for create_figure()
+        """
+        # Get config sections
+        plot_groups = self.profile_config.get('plot_groups', {})
+        y_axes = self.profile_config.get('y_axes', {})
+        
+        # Get production plot config (assuming all data_cols are production)
+        production_config = plot_groups.get('production', {})
+        
+        # Build series specification
+        series_spec = {
+            'columns': data_cols,
+            'type': production_config.get('plot_type', 'bar'),
+            'stack': production_config.get('stack', True),
+            'y_axis': production_config.get('y_axis', 'primary'),
+            'opacity': production_config.get('opacity', 0.85)
+        }
+        
+        # Build axes configuration
+        primary_axis = y_axes.get('primary', {})
+        axes_config = {
+            'primary': {
+                'title': f"{primary_axis.get('title', 'Value')} [{unit_label}]",
+                'side': primary_axis.get('side', 'left'),
+                'showgrid': primary_axis.get('showgrid', False)
+            }
+        }
+        
+        # Add secondary axis if configured
+        if 'secondary' in y_axes:
+            secondary_axis = y_axes['secondary']
+            axes_config['secondary'] = {
+                'title': secondary_axis.get('title', 'Secondary Value'),
+                'side': secondary_axis.get('side', 'right'),
+                'overlaying': 'y',
+                'showgrid': secondary_axis.get('showgrid', False)
+            }
+        
+        # Build complete plot specification
+        plot_spec = {
+            'x_col': 'all_ts',
+            'y_col': None,  # Using explicit columns
+            'series': [series_spec],
+            'axes': axes_config,
+            'title': title,
+            'height': 600,
+            'barmode': 'stack' if series_spec['stack'] else 'group',
+            'xaxis_type': 'category'
+        }
+        
+        return plot_spec

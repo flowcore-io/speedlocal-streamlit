@@ -1,7 +1,7 @@
-table,label,model,scen,sector,subsector,service,techgroup,comgroup,topic,attr,prc,com,all_ts,regfrom,regto,year
-energy,sector,,,,,,,,energy,,,,ANNUAL,,,
-emissions,sector,,,"HOU,EDH,IND,TRA,AFO",,,,"""ENV_CO2F,ENV_CO2P""",emission,f_out,,,ANNUAL,,,
-map,com,,,,,,,,,f_out,TB*,,ANNUAL,,,
-map,com,,,,,,,,energy,f_out,IMP*,,ANNUAL,,,
-map,com,,,,,,,,energy,f_in,EXP*,,ANNUAL,,,
-energy_subannual,techgroup,,,EDH,,,,,energy,f_out,.*ELC*,HET,(?!.*000).*,,,2023
+table,label,model,scen,sector,subsector,service,techgroup,comgroup,topic,attr,prc,com,all_ts,regfrom,regto,year,vntg,unit,cur,aggregation
+energy,sector,,,,,,,,energy,,,,ANNUAL,,,,,,,
+emissions,sector,,,"HOU,EDH,IND,TRA,AFO",,,,"""ENV_CO2F,ENV_CO2P""",emission,f_out,,,ANNUAL,,,,,,,
+map,com,,,,,,,,,f_out,TB*,,ANNUAL,,,,,,,
+map,com,,,,,,,,energy,f_out,IMP*,,ANNUAL,,,,,,,
+map,com,,,,,,,,energy,f_in,EXP*,,ANNUAL,,,,,,,
+energy_subannual,prc,,,EDH,,,,,energy,f_out,.*ELC*,HET,(?!.*000).*,,,,,,,"regfrom,regto"

@@ -99,6 +99,7 @@ class TimesReportPlotter:
         title = plot_spec.get('title', 'Plot')
         height = plot_spec.get('height', 600)
         barmode = plot_spec.get('barmode', 'stack')
+        xaxis_type = plot_spec.get('xaxis_type', 'linear')
         
         if not series_specs:
             return None
@@ -125,7 +126,8 @@ class TimesReportPlotter:
             title=title,
             height=height,
             barmode=barmode,
-            df = df
+            df = df,
+            xaxis_type=xaxis_type
         )
         
         return fig
@@ -428,7 +430,8 @@ class TimesReportPlotter:
         title: str,
         height: int,
         barmode: str,
-        df: pd.DataFrame = None
+        df: pd.DataFrame = None,
+        xaxis_type: str = 'linear'
     ) -> None:
         """Configure figure layout including axes."""
         
@@ -447,7 +450,7 @@ class TimesReportPlotter:
             'xaxis': {
                 'title': x_col,
                 'tickfont': dict(size=10),
-                'type': 'linear'
+                'type': xaxis_type
             },
             'yaxis': {
                 'title': primary_title,
@@ -495,5 +498,4 @@ class TimesReportPlotter:
         Wrapper around utility function.
         """
         return extract_unit_label(self.df)
-    
     
