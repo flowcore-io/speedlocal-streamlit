@@ -40,7 +40,7 @@ class SubAnnualModule(BaseVisualizationModule):
             "apply_global_filters": True,
             "apply_unit_conversion": False,
             "show_module_filters": True,
-            "filterable_columns": ['techgroup'],
+            "filterable_columns": ['techgroup', 'prc'],
             "default_columns": ['techgroup']
         }
     
@@ -196,8 +196,6 @@ class SubAnnualModule(BaseVisualizationModule):
             'primary': self.profile_config['y_axes']['primary'],
             'secondary': self.profile_config['y_axes'].get('secondary')
         }
-    
-    # subannual/module.py - add this new method
 
     def _build_plot_spec_from_config(
         self, 
