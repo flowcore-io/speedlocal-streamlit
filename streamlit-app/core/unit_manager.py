@@ -137,12 +137,12 @@ class UnitManager:
             st.caption(f"📊 Detected categories in data: {', '.join(available_categories)}")
             
             # Show defaults
-            if default_target_units:
-                defaults_text = " | ".join([
-                    f"{cat}: **{default_target_units.get(cat, 'N/A')}**" 
-                    for cat in available_categories
-                ])
-                st.markdown(f"**Default units:** {defaults_text}")
+            # if default_target_units:
+            #     defaults_text = " | ".join([
+            #         f"{cat}: **{default_target_units.get(cat, 'N/A')}**" 
+            #         for cat in available_categories
+            #     ])
+            #     st.markdown(f"**Default units:** {defaults_text}")
             
             # Render controls
             unit_config = self.render_module_unit_controls(

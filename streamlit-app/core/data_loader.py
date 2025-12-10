@@ -5,7 +5,7 @@ Wrapper around the existing data loading functionality.
 
 import streamlit as st
 import pandas as pd
-from typing import Dict, Optional
+from typing import Dict, Optional, Any
 from pathlib import Path
 
 # Import from existing utils
@@ -214,28 +214,57 @@ class DataLoaderManager:
         
         self.table_dfs = updated_tables
         return self.table_dfs
-def create_description_mapping(desc_df: pd.DataFrame) -> Dict[str, Dict[str, str]]:
+
+
+# data_loader.py, after DataLoaderManager class
+
+def create_all_description_mappings(desc_df: pd.DataFrame) -> Dict[str, Any]:
     """
-    Create nested dictionary mapping from description DataFrame.
+    Create both flat and nested description mappings from single source.
     
     Args:
-        desc_df: DataFrame with columns [set_name, element, description]
+        desc_df: Description DataFrame with columns [set_name, element, description]
     
     Returns:
-        Nested dict like: {'sector': {'TRA': 'Transport', ...}, 'comgroup': {...}}
+        Dictionary with:
+            - 'nested': Dict[str, Dict[str, str]] - For creating *_desc columns
+            - 'flat': Dict[str, str] - For mapping label column
+    
+    Example:
+        {
+            'nested': {
+                'sector': {'TRA': 'Transport', ...},
+                'comgroup': {'ELC': 'Electricity', ...}
+            },
+            'flat': {
+                'TRA': 'Transport',
+                'ELC': 'Electricity',
+                ...
+            }
+        }
     """
     if desc_df.empty:
-        return {}
+        return {'nested': {}, 'flat': {}}
     
-    mapping = {}
-    
-    # Group by set_name (e.g., 'sector_desc', 'comgroup_desc')
+    # Nested mapping (for _apply_descriptions)
+    nested = {}
     for set_name, group in desc_df.groupby('set_name'):
         # Remove '_desc' suffix to get column name
         # 'sector_desc' -> 'sector'
         column_name = set_name.replace('_desc', '')
         
         # Create mapping: element -> description
-        mapping[column_name] = dict(zip(group['element'], group['description']))
+        nested[column_name] = dict(zip(group['element'], group['description']))
     
-    return mapping
+    # Flat mapping (for label column)
+    flat = {}
+    for _, row in desc_df.iterrows():
+        element = str(row['element'])
+        description = str(row['description'])
+        # Last one wins if duplicates exist
+        flat[element] = description
+    
+    return {
+        'nested': nested,
+        'flat': flat
+    }

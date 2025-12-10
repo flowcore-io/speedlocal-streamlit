@@ -7,6 +7,7 @@ from typing import Dict, Any, List, Optional
 import streamlit as st
 import pandas as pd
 
+from utils.unit_converter import extract_unit_label
 
 class BaseModule(ABC):
     """Base class for all Streamlit app modules."""
@@ -25,7 +26,6 @@ class BaseModule(ABC):
         self.description = description
         self.order = order
         self.enabled = enabled
-        self._data_cache = {}
     
     @abstractmethod
     def get_required_tables(self) -> list:
@@ -202,35 +202,9 @@ class BaseModule(ABC):
     def _get_unit_label(self, df: pd.DataFrame) -> str:
         """
         Extract unit label from dataframe for axis labels.
-        Checks both 'unit' and 'cur' columns.
-        
-        Args:
-            df: DataFrame with unit/cur columns
-            
-        Returns:
-            String representing units (e.g., 't', 'GJ', 'MKr25')
+        Wrapper around utility function.
         """
-        if df.empty:
-            return 'value'
-        
-        units = []
-        
-        # Check unit column
-        if 'unit' in df.columns:
-            df_units = df['unit'].dropna().unique()
-            units.extend([u for u in df_units if str(u).upper() != 'NA'])
-        
-        # Check currency column
-        if 'cur' in df.columns:
-            df_curs = df['cur'].dropna().unique()
-            units.extend([c for c in df_curs if str(c).upper() != 'NA'])
-        
-        if not units:
-            return 'value'
-        elif len(units) == 1:
-            return str(units[0])
-        else:
-            return ', '.join(sorted(set(str(u) for u in units)))
+        return extract_unit_label(df)
     
     def _render_unit_controls(
         self,

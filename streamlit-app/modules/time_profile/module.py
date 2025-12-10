@@ -1,5 +1,5 @@
 """
-Time Profile Module for hourly/sub-annual time series visualization.
+Time Profile Module for sub-annual time series visualization.
 """
 
 import streamlit as st

@@ -415,3 +415,41 @@ class UnitConverter:
                     df_converted.at[idx, unit_col] = target_unit
         
         return df_converted
+
+
+## Additional unit-realted helper functions
+def extract_unit_label(df: pd.DataFrame, unit_col: str = 'unit', currency_col: str = 'cur') -> str:
+    """
+    Extract unit label from dataframe for axis labels.
+    Checks both unit and currency columns.
+    
+    Args:
+        df: DataFrame with unit/cur columns
+        unit_col: Name of unit column (default: 'unit')
+        currency_col: Name of currency column (default: 'cur')
+        
+    Returns:
+        String representing units (e.g., 't', 'GJ', 'MKr25')
+        Returns 'value' if no units found
+    """
+    if df.empty:
+        return 'value'
+    
+    units = []
+    
+    # Check unit column
+    if unit_col in df.columns:
+        df_units = df[unit_col].dropna().unique()
+        units.extend([u for u in df_units if str(u).upper() != 'NA'])
+    
+    # Check currency column
+    if currency_col in df.columns:
+        df_curs = df[currency_col].dropna().unique()
+        units.extend([c for c in df_curs if str(c).upper() != 'NA'])
+    
+    if not units:
+        return 'value'
+    elif len(units) == 1:
+        return str(units[0])
+    else:
+        return ', '.join(sorted(set(str(u) for u in units)))

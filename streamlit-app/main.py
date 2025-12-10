@@ -7,7 +7,7 @@ from pathlib import Path
 import pandas as pd
 
 from core.session_manager import SessionManager
-from core.data_loader import DataLoaderManager, create_description_mapping
+from core.data_loader import DataLoaderManager, create_all_description_mappings
 from core.filter_manager import FilterManager
 from core.unit_manager import UnitManager  
 from config.module_registry import ModuleRegistry
@@ -72,7 +72,8 @@ def main():
         # Load description tables
         with st.spinner("Loading description tables..."):
             desc_df = data_loader.load_description_tables()
-            desc_mapping = create_description_mapping(desc_df)
+            all_mappings = create_all_description_mappings(desc_df)
+            desc_mapping = all_mappings['nested']
         
             table_dfs = data_loader.apply_label_descriptions(desc_df)
 
