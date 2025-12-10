@@ -74,6 +74,8 @@ def main():
             desc_df = data_loader.load_description_tables()
             desc_mapping = create_description_mapping(desc_df)
         
+            table_dfs = data_loader.apply_label_descriptions(desc_df)
+
         # Load unit conversions
         with st.spinner("Loading unit conversions..."):
             unit_conversions_df = data_loader.load_unit_conversions()

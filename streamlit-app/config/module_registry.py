@@ -9,7 +9,7 @@ from modules.energy_emissions.module import EnergyEmissionsModule
 
 from modules.energy_map.module import EnergyMapModule
 from modules.time_profile.module import TimeProfileModule
-from modules.time_profile_v2.module import TimeProfileModuleV2
+from modules.subannual.module import SubAnnualModule
 
 
 
@@ -34,10 +34,10 @@ class ModuleRegistry:
         self.register_module("energy_flow_map", EnergyMapModule())
 
         # Register Time Profile module 
-        self.register_module("time_profile", TimeProfileModule())
+        # self.register_module("time_profile", TimeProfileModule())
 
         # Register Time Profile module 
-        self.register_module("time_profile_v2", TimeProfileModuleV2())
+        self.register_module("sub-annual_profile", SubAnnualModule())
         
         # Future modules can be added here:
         

@@ -4,4 +4,4 @@ emissions,sector,,,"HOU,EDH,IND,TRA,AFO",,,,"""ENV_CO2F,ENV_CO2P""",emission,f_o
 map,com,,,,,,,,,f_out,TB*,,ANNUAL,,,
 map,com,,,,,,,,energy,f_out,IMP*,,ANNUAL,,,
 map,com,,,,,,,,energy,f_in,EXP*,,ANNUAL,,,
-energy_subannual,techgroup,,,EDH,,,,,energy,f_out,.*ELC*,HET,(?!.*000).*,,,
+energy_subannual,techgroup,,,EDH,,,,,energy,f_out,.*ELC*,HET,(?!.*000).*,,,2023

@@ -1,6 +1,0 @@
-table,label,plot_group,color
-energy,Onshore wind,production,
-energy,Biogas CHP,production,
-storage,Heat storage input Borehole,storage_in,
-storage,Heat storage Pit,storage_soc,
-prices,Electricity price,price,

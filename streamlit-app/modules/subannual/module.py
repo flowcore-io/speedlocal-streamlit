@@ -1,0 +1,206 @@
+"""
+Module for sub-annual time data visualization.
+"""
+
+import streamlit as st
+import pandas as pd
+import yaml
+from typing import Dict, Any, Optional, List
+from pathlib import Path
+import sys
+
+# Add project root to path
+project_root = Path(__file__).parent.parent.parent
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+
+from modules.base_module import BaseVisualizationModule
+from utils._plotting import TimesReportPlotter
+
+
+class SubAnnualModule(BaseVisualizationModule):
+    def __init__(self):
+        super().__init__(
+            name="Sub-Annual Profile",
+            description="subannual visualization",
+            order=4,
+            enabled=True
+        )
+        self._exclusion_info = {}  # Track exclusions per section
+        # Load configuration
+        self.config_dir = Path(__file__).parent / "config"
+        self.profile_config = self._load_profile_config()
+
+    def get_required_tables(self) -> list:
+        return ["energy_subannual"]
+    
+    def get_config(self) -> Dict[str, Any]:
+        """Return module configuration."""
+        return {
+            "apply_global_filters": True,
+            "apply_unit_conversion": True,
+            "show_module_filters": True,
+            "filterable_columns": ['techgroup'],
+            "default_columns": ['techgroup']
+        }
+    
+    def _load_profile_config(self) -> Dict:
+        """Load profile_config.yaml."""
+        config_path = self.config_dir / "profile_config.yaml"
+        
+        if not config_path.exists():
+            st.warning(f"Config file not found: {config_path}")
+            return {}
+        
+        with open(config_path, 'r') as f:
+            return yaml.safe_load(f)
+
+    
+    def _load_and_prepare_data(self, table_dfs: Dict) -> pd.DataFrame:
+        """Combine required tables and prepare."""
+        dfs = []
+        for table_name in self.get_required_tables():
+            if table_name in table_dfs:
+                df = table_dfs[table_name].copy()
+                # Filter out ANNUAL
+                if 'all_ts' in df.columns:
+                    df = df[df['all_ts'] != 'ANNUAL']
+                dfs.append(df)
+        
+        df_combined = pd.concat(dfs, ignore_index=True) if dfs else pd.DataFrame()
+        
+        # Labels are already mapped to descriptions by DataLoaderManager
+        return df_combined
+    
+    def _render_visualization(self, df: pd.DataFrame, filters: Dict) -> None:
+        """Render interface."""
+        st.header("Subannual Profile")
+        
+        # Filter controls
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            scenarios = sorted(df['scen'].unique())
+            selected_scenario = st.selectbox("Scenario", scenarios, key="tp_scenario")
+        
+        with col2:
+            years = sorted(df['year'].unique())
+            selected_year = st.selectbox("Year", years, index=len(years)-1, key="tp_year")
+        
+        with col3:
+            regions = sorted(df['regfrom'].unique()) if 'regfrom' in df.columns else []
+            if not regions:
+                self.show_warning("No regions found in data")
+                return
+            
+            selected_region = st.selectbox(
+                "Region", 
+                regions, 
+                index=0,
+                key="tp_region"
+            )
+
+        # Filter data
+        df_plot = df[
+            (df['scen'] == selected_scenario) &
+            (df['year'] == selected_year) &
+            (df['regfrom'] == selected_region)
+        ]
+
+        if df_plot.empty:
+            self.show_warning("No data for selected filters.")
+            return
+        
+        if df_plot.empty:
+            self.show_warning("No data for selected filters.")
+            return
+        
+        # Transform to wide format
+        df_wide = self._transform_to_wide(df_plot)
+        
+        if df_wide.empty:
+            self.show_warning("No data after transformation.")
+            return
+        
+        # Show available columns for debugging
+        # Show available columns for debugging
+        with st.expander("🔍 Debug Info", expanded=False):
+            st.write("**DataFrame shape:**", df_wide.shape)
+            st.write("**Columns:**", df_wide.columns.tolist())
+            
+            data_cols = [col for col in df_wide.columns if col not in ['all_ts', 'scen', 'year']]
+            st.write("**Data columns:**", data_cols)
+            st.write("**Number of series:**", len(data_cols))
+
+        # Get all data columns
+        data_cols = [col for col in df_wide.columns if col not in ['all_ts', 'scen', 'year']]
+
+        if not data_cols:
+            self.show_warning("No data series to plot")
+            return
+
+        # Create plot
+        st.subheader(f"Profile: {selected_scenario} — {selected_year} — {selected_region}")
+
+        try:
+            # Create simple categories dict (all columns in one group)
+            categories = {'production': data_cols}
+            
+            # Get unit label
+            unit_label = self._get_unit_label(df_plot)
+            unit_info = {'production': unit_label}
+            
+            # Plot using stacked_timeseries
+            plotter = TimesReportPlotter(df_wide)
+            fig = plotter.plot(
+                method='stacked_timeseries',
+                time_col='all_ts',
+                categories=categories,
+                config=self.profile_config,
+                unit_info=unit_info,
+                title=f"Time Profile: {selected_scenario} — {selected_year} — {selected_region}"
+            )
+            
+            if fig:
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                self.show_error("Failed to create plot")
+
+        except Exception as e:
+            self.show_error(f"Error creating plot: {str(e)}")
+            st.exception(e)
+    
+    def _aggregate_regions(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Aggregate by regions (replaces transformer method)."""
+        group_cols = [col for col in df.columns 
+                     if col not in ['regfrom', 'regto', 'value']]
+        return df.groupby(group_cols, as_index=False)['value'].sum()
+    
+    def _transform_to_wide(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Transform to wide format using just the label column."""
+        try:
+            if 'label' not in df.columns:
+                st.error("No 'label' column found in data")
+                return pd.DataFrame()
+            
+            # Use label directly as column name (no combining with other fields)
+            df_wide = df.pivot_table(
+                index=['all_ts', 'scen', 'year'],
+                columns='label',  # Just use label as-is
+                values='value',
+                aggfunc='sum'
+            ).reset_index()
+            
+            return df_wide
+        
+        except Exception as e:
+            st.error(f"Error transforming data: {e}")
+            st.exception(e)
+            return pd.DataFrame()
+    
+    def _build_axes_config(self) -> Dict:
+        """Build axes config from profile_config.yaml."""
+        return {
+            'primary': self.profile_config['y_axes']['primary'],
+            'secondary': self.profile_config['y_axes'].get('secondary')
+        }

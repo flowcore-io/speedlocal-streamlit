@@ -179,7 +179,41 @@ class DataLoaderManager:
         except Exception as e:
             st.warning(f"Could not load unit conversions: {str(e)}")
             return pd.DataFrame()
-
+    def apply_label_descriptions(self, desc_df: pd.DataFrame) -> Dict[str, pd.DataFrame]:
+        """
+        Apply descriptions to label columns in all loaded tables.
+        
+        Args:
+            desc_df: Description DataFrame with columns [set_name, element, description]
+            
+        Returns:
+            Updated table_dfs dictionary with label columns mapped to descriptions
+        """
+        if desc_df.empty:
+            return self.table_dfs
+        
+        # Create a flat lookup: element -> description (across all desc tables)
+        label_lookup = {}
+        for _, row in desc_df.iterrows():
+            element = str(row['element'])
+            description = str(row['description'])
+            # Store mapping (last one wins if duplicates exist)
+            label_lookup[element] = description
+        
+        # Apply to each table that has a label column
+        updated_tables = {}
+        for table_name, df in self.table_dfs.items():
+            if df.empty or 'label' not in df.columns:
+                updated_tables[table_name] = df
+                continue
+            
+            # Map label values to descriptions
+            df_updated = df.copy()
+            df_updated['label'] = df_updated['label'].map(label_lookup).fillna(df_updated['label'])
+            updated_tables[table_name] = df_updated
+        
+        self.table_dfs = updated_tables
+        return self.table_dfs
 def create_description_mapping(desc_df: pd.DataFrame) -> Dict[str, Dict[str, str]]:
     """
     Create nested dictionary mapping from description DataFrame.
