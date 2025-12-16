@@ -196,6 +196,8 @@ class UnitConverter:
             return True
         return self.get_conversion_factor(from_unit, to_unit) is not None
     
+    # unit_converter.py, line ~200 - REPLACE entire method
+
     def convert_and_filter(
         self,
         df: pd.DataFrame,
@@ -207,24 +209,7 @@ class UnitConverter:
     ) -> Tuple[pd.DataFrame, ExclusionInfo]:
         """
         Convert units/currencies and filter out rows that cannot be converted.
-        
-        This method handles three cases:
-        1. Physical flows/capacity: unit != NA, currency == NA (convert unit only)
-        2. Financial flows: unit == NA, currency != NA (convert currency only)
-        3. Prices: unit != NA, currency != NA (convert both with special methodology)
-        
-        Args:
-            df: DataFrame to convert
-            target_units: Dict mapping category → target unit (uses defaults if None)
-            selected_categories: List of categories to include (uses all if None)
-            unit_col: Name of column containing units
-            currency_col: Name of column containing currencies
-            value_col: Name of column containing values to convert
-            
-        Returns:
-            Tuple of:
-                - Converted and filtered DataFrame
-                - ExclusionInfo object with details about excluded rows
+        VECTORIZED VERSION
         """
         if df.empty:
             return df, ExclusionInfo(0, 0, set(), set(), set(), set())
@@ -236,101 +221,96 @@ class UnitConverter:
         if selected_categories is None:
             selected_categories = self.get_all_categories()
         
-        # Track exclusions
         total_rows = len(df)
+        df_result = df.copy()
+        
+        # Track exclusions
         unknown_units = set()
         unknown_currencies = set()
         unconvertible_units = set()
         unconvertible_currencies = set()
         
-        # Create mask for rows to keep
-        keep_mask = pd.Series([True] * len(df), index=df.index)
+        # Create validity mask (starts as all True)
+        valid_mask = pd.Series([True] * len(df_result), index=df_result.index)
         
-        df_result = df.copy()
+        # Build conversion lookup tables
+        unit_factors, unit_targets, cur_factors, cur_targets = self._build_conversion_maps(
+            df_result, target_units, selected_categories, unit_col, currency_col
+        )
         
         # Check if columns exist
-        has_unit_col = unit_col in df.columns
-        has_currency_col = currency_col in df.columns
-        has_value_col = value_col in df.columns
+        has_unit_col = unit_col in df_result.columns
+        has_currency_col = currency_col in df_result.columns
+        has_value_col = value_col in df_result.columns
         
         if not has_value_col:
             return df, ExclusionInfo(total_rows, 0, set(), set(), set(), set())
         
-        # Process each row
-        for idx, row in df_result.iterrows():
-            unit = row.get(unit_col) if has_unit_col else None
-            currency = row.get(currency_col) if has_currency_col else None
-            value = row[value_col]
+        # === VECTORIZED UNIT CONVERSION ===
+        if has_unit_col:
+            # Identify rows with unit values (not NA)
+            has_unit = df_result[unit_col].notna() & (df_result[unit_col] != '') & (df_result[unit_col] != 'NA')
             
-            row_valid = True
-            conversion_factor = 1.0  # Track total conversion factor
+            # Check which units are known and convertible
+            is_known = df_result[unit_col].isin(self.unit_to_category.keys())
+            is_in_map = df_result[unit_col].isin(unit_factors.keys())
             
-            # Check if unit and currency are actual values (not NA, None, empty string, or 'NA' string)
-            has_unit = has_unit_col and not pd.isna(unit) and unit != '' and unit != 'NA'
-            has_currency = has_currency_col and not pd.isna(currency) and currency != '' and currency != 'NA'
+            # Track unknown units
+            unknown_unit_mask = has_unit & ~is_known
+            if unknown_unit_mask.any():
+                unknown_units = set(df_result.loc[unknown_unit_mask, unit_col].unique())
             
-            # Case 1: Physical flows/capacity (unit present, no currency)
-            # Case 3: Prices (both unit and currency present)
-            if has_unit:
-                # Check if unit is known
-                if not self.is_unit_known(unit):
-                    unknown_units.add(unit)
-                    row_valid = False
-                else:
-                    category = self.get_category(unit)
-                    
-                    # Check if category is selected
-                    if category not in selected_categories:
-                        row_valid = False
-                    else:
-                        # Try to convert
-                        target_unit = target_units.get(category)
-                        
-                        if target_unit and unit != target_unit:
-                            if not self.can_convert(unit, target_unit):
-                                unconvertible_units.add(f"{unit}→{target_unit}")
-                                row_valid = False
-                            else:
-                                # Get conversion factor
-                                factor = self.get_conversion_factor(unit, target_unit)
-                                conversion_factor *= factor
-                                df_result.at[idx, unit_col] = target_unit
+            # Track unconvertible units (known but not in conversion map)
+            unconvertible_unit_mask = has_unit & is_known & ~is_in_map
+            if unconvertible_unit_mask.any():
+                unconvertible_units = set(
+                    df_result.loc[unconvertible_unit_mask, unit_col].apply(
+                        lambda u: f"{u}→{target_units.get(self.get_category(u), 'unknown')}"
+                    ).unique()
+                )
             
-            # Case 2: Financial flows (currency present, no unit)
-            # Case 3: Prices (both unit and currency present)
-            if has_currency and row_valid:  # Only check if row is still valid
-                # Check if currency is known
-                if not self.is_unit_known(currency):
-                    unknown_currencies.add(currency)
-                    row_valid = False
-                else:
-                    category = self.get_category(currency)
-                    
-                    # Check if category is selected
-                    if category not in selected_categories:
-                        row_valid = False
-                    else:
-                        # Try to convert
-                        target_currency = target_units.get(category)
-                        
-                        if target_currency and currency != target_currency:
-                            if not self.can_convert(currency, target_currency):
-                                unconvertible_currencies.add(f"{currency}→{target_currency}")
-                                row_valid = False
-                            else:
-                                # Get conversion factor
-                                factor = self.get_conversion_factor(currency, target_currency)
-                                conversion_factor *= factor
-                                df_result.at[idx, currency_col] = target_currency
+            # Update validity mask
+            # Rows are valid if: (no unit) OR (unit is convertible)
+            valid_mask = valid_mask & ((~has_unit) | is_in_map)
             
-            # Apply the total conversion factor to the value
-            if row_valid and conversion_factor != 1.0:
-                df_result.at[idx, value_col] = value * conversion_factor
-            
-            keep_mask[idx] = row_valid
+            # Apply conversions vectorized
+            conversion_factors = df_result.loc[is_in_map, unit_col].map(unit_factors)
+            df_result.loc[is_in_map, value_col] = df_result.loc[is_in_map, value_col] * conversion_factors
+            df_result.loc[is_in_map, unit_col] = df_result.loc[is_in_map, unit_col].map(unit_targets)
         
-        # Filter dataframe
-        df_filtered = df_result[keep_mask].copy()
+        # === VECTORIZED CURRENCY CONVERSION ===
+        if has_currency_col:
+            # Identify rows with currency values (not NA)
+            has_currency = df_result[currency_col].notna() & (df_result[currency_col] != '') & (df_result[currency_col] != 'NA')
+            
+            # Check which currencies are known and convertible
+            is_known = df_result[currency_col].map(lambda x: self.is_unit_known(x) if pd.notna(x) else False)
+            is_in_map = df_result[currency_col].isin(cur_factors.keys())
+            
+            # Track unknown currencies
+            unknown_cur_mask = has_currency & ~is_known
+            if unknown_cur_mask.any():
+                unknown_currencies = set(df_result.loc[unknown_cur_mask, currency_col].unique())
+            
+            # Track unconvertible currencies
+            unconvertible_cur_mask = has_currency & is_known & ~is_in_map
+            if unconvertible_cur_mask.any():
+                unconvertible_currencies = set(
+                    df_result.loc[unconvertible_cur_mask, currency_col].apply(
+                        lambda c: f"{c}→{target_units.get(self.get_category(c), 'unknown')}"
+                    ).unique()
+                )
+            
+            # Update validity mask (only if row is still valid from unit check)
+            valid_mask &= ~has_currency | is_in_map
+            
+            # Apply conversions vectorized
+            conversion_factors = df_result.loc[is_in_map, unit_col].map(unit_factors)
+            df_result.loc[is_in_map, value_col] = df_result.loc[is_in_map, value_col] * conversion_factors
+            df_result.loc[is_in_map, unit_col] = df_result.loc[is_in_map, unit_col].map(unit_targets)
+        
+        # Filter to valid rows only
+        df_filtered = df_result[valid_mask].copy()
         
         excluded_rows = total_rows - len(df_filtered)
         
@@ -340,10 +320,84 @@ class UnitConverter:
             unknown_units=unknown_units,
             unknown_currencies=unknown_currencies,
             unconvertible_units=unconvertible_units,
-            unconvertible_currencies=unconvertible_currencies)
+            unconvertible_currencies=unconvertible_currencies
+        )
         
         return df_filtered, exclusion_info
 
+    # unit_converter.py - add this NEW method to UnitConverter class
+
+    def _build_conversion_maps(
+        self,
+        df: pd.DataFrame,
+        target_units: Dict[str, str],
+        selected_categories: List[str],
+        unit_col: str = 'unit',
+        currency_col: str = 'cur'
+    ) -> Tuple[Dict, Dict, Dict, Dict]:
+        """
+        Build lookup dictionaries for vectorized conversion.
+        
+        Returns:
+            Tuple of (unit_factors, unit_targets, cur_factors, cur_targets)
+            Each is a dict mapping from_value -> factor or target
+        """
+        unit_factors = {}
+        unit_targets = {}
+        cur_factors = {}
+        cur_targets = {}
+        
+        # Get unique values from dataframe
+        if unit_col in df.columns:
+            unique_units = df[unit_col].dropna().unique()
+            
+            for unit in unique_units:
+                if not self.is_unit_known(unit):
+                    continue  # Will be filtered out
+                
+                category = self.get_category(unit)
+                if category not in selected_categories:
+                    continue  # Will be filtered out
+                
+                target = target_units.get(category)
+                if not target:
+                    continue
+                
+                if unit == target:
+                    unit_factors[unit] = 1.0
+                    unit_targets[unit] = target
+                else:
+                    factor = self.get_conversion_factor(unit, target)
+                    if factor is not None:
+                        unit_factors[unit] = factor
+                        unit_targets[unit] = target
+        
+        # Same for currency column
+        if currency_col in df.columns:
+            unique_currencies = df[currency_col].dropna().unique()
+            
+            for cur in unique_currencies:
+                if not self.is_unit_known(cur):
+                    continue
+                
+                category = self.get_category(cur)
+                if category not in selected_categories:
+                    continue
+                
+                target = target_units.get(category)
+                if not target:
+                    continue
+                
+                if cur == target:
+                    cur_factors[cur] = 1.0
+                    cur_targets[cur] = target
+                else:
+                    factor = self.get_conversion_factor(cur, target)
+                    if factor is not None:
+                        cur_factors[cur] = factor
+                        cur_targets[cur] = target
+        
+        return unit_factors, unit_targets, cur_factors, cur_targets
     # Keep legacy methods for backwards compatibility
     def filter_by_categories(
         self,
