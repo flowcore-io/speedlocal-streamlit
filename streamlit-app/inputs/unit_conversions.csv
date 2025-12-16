@@ -8,9 +8,8 @@ kiloton,mt,kt,1000,mass
 megaton,mt,mt,1,mass
 ton,mt,t,1000000,mass
 megaton,t,mt,0.000001,mass
-Mio. DKK,MKr25,MEuro25,0.134228188,currency
-Mio. Euro,MEuro25,MKr25,7.45,currency
-Mio. DKK,MKr25,MEuro25,0.134228188,currency
+Mio. Euro,MKr25,MEuro25,0.134228188,currency
+Mio. DKK,MEuro25,MKr25,7.45,currency
 Mio. Euro,MEuro25,MEuro25,1,currency
 Mio. DKK,MKr25,MKr25,1,currency
 terajoules,TJ,TJ,1,energy

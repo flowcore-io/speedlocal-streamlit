@@ -8,7 +8,6 @@ from modules.key_insights.module import KeyInsightsModule
 from modules.energy_emissions.module import EnergyEmissionsModule
 
 from modules.energy_map.module import EnergyMapModule
-from modules.time_profile.module import TimeProfileModule
 from modules.subannual.module import SubAnnualModule
 
 
@@ -37,7 +36,7 @@ class ModuleRegistry:
         # self.register_module("time_profile", TimeProfileModule())
 
         # Register Time Profile module 
-        self.register_module("sub-annual_profile", SubAnnualModule())
+        self.register_module("subannual_profile", SubAnnualModule())
         
         # Future modules can be added here:
         

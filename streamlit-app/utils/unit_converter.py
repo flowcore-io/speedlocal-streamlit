@@ -65,7 +65,6 @@ class UnitConverter:
         
         # Load default units from config
         self.default_units = self._load_default_units(config_path)
-        self.default_selected_categories = self._load_default_categories(config_path)
     
     def _load_default_units(self, config_path: Optional[str] = None) -> Dict[str, str]:
         """Load default units from YAML config file."""
@@ -86,23 +85,6 @@ class UnitConverter:
         except Exception as e:
             print(f"Warning: Could not load config from {config_path}: {e}")
             return {}
-    
-    def _load_default_categories(self, config_path: Optional[str] = None) -> List[str]:
-        """Load default selected categories from YAML config file."""
-        if config_path is None:
-            config_path = Path(__file__).parent.parent / "config" / "default_units.yaml"
-        else:
-            config_path = Path(config_path)
-        
-        if not config_path.exists():
-            return []
-        
-        try:
-            with open(config_path, 'r') as f:
-                config = yaml.safe_load(f)
-                return config.get('default_selected_categories', [])
-        except Exception as e:
-            return []
     
     def get_default_unit(self, category: str) -> Optional[str]:
         """Get default target unit for a category."""
@@ -251,7 +233,7 @@ class UnitConverter:
             
             # Check which units are known and convertible
             is_known = df_result[unit_col].isin(self.unit_to_category.keys())
-            is_in_map = df_result[unit_col].isin(unit_factors.keys())
+            unit_is_in_map = df_result[unit_col].isin(unit_factors.keys())
             
             # Track unknown units
             unknown_unit_mask = has_unit & ~is_known
@@ -259,7 +241,7 @@ class UnitConverter:
                 unknown_units = set(df_result.loc[unknown_unit_mask, unit_col].unique())
             
             # Track unconvertible units (known but not in conversion map)
-            unconvertible_unit_mask = has_unit & is_known & ~is_in_map
+            unconvertible_unit_mask = has_unit & is_known & ~unit_is_in_map
             if unconvertible_unit_mask.any():
                 unconvertible_units = set(
                     df_result.loc[unconvertible_unit_mask, unit_col].apply(
@@ -269,12 +251,12 @@ class UnitConverter:
             
             # Update validity mask
             # Rows are valid if: (no unit) OR (unit is convertible)
-            valid_mask = valid_mask & ((~has_unit) | is_in_map)
+            valid_mask = valid_mask & ((~has_unit) | unit_is_in_map)
             
             # Apply conversions vectorized
-            conversion_factors = df_result.loc[is_in_map, unit_col].map(unit_factors)
-            df_result.loc[is_in_map, value_col] = df_result.loc[is_in_map, value_col] * conversion_factors
-            df_result.loc[is_in_map, unit_col] = df_result.loc[is_in_map, unit_col].map(unit_targets)
+            conversion_factors = df_result.loc[unit_is_in_map, unit_col].map(unit_factors)
+            df_result.loc[unit_is_in_map, value_col] = df_result.loc[unit_is_in_map, value_col] * conversion_factors
+            df_result.loc[unit_is_in_map, unit_col] = df_result.loc[unit_is_in_map, unit_col].map(unit_targets)
         
         # === VECTORIZED CURRENCY CONVERSION ===
         if has_currency_col:
@@ -283,7 +265,7 @@ class UnitConverter:
             
             # Check which currencies are known and convertible
             is_known = df_result[currency_col].map(lambda x: self.is_unit_known(x) if pd.notna(x) else False)
-            is_in_map = df_result[currency_col].isin(cur_factors.keys())
+            cur_is_in_map = df_result[currency_col].isin(cur_factors.keys())
             
             # Track unknown currencies
             unknown_cur_mask = has_currency & ~is_known
@@ -291,7 +273,7 @@ class UnitConverter:
                 unknown_currencies = set(df_result.loc[unknown_cur_mask, currency_col].unique())
             
             # Track unconvertible currencies
-            unconvertible_cur_mask = has_currency & is_known & ~is_in_map
+            unconvertible_cur_mask = has_currency & is_known & ~cur_is_in_map
             if unconvertible_cur_mask.any():
                 unconvertible_currencies = set(
                     df_result.loc[unconvertible_cur_mask, currency_col].apply(
@@ -299,13 +281,13 @@ class UnitConverter:
                     ).unique()
                 )
             
-            # Update validity mask (only if row is still valid from unit check)
-            valid_mask &= ~has_currency | is_in_map
+            # Update validity mask: valid if (no currency) OR (convertible)
+            valid_mask = valid_mask & ((~has_currency) | cur_is_in_map)  
             
             # Apply conversions vectorized
-            conversion_factors = df_result.loc[is_in_map, unit_col].map(unit_factors)
-            df_result.loc[is_in_map, value_col] = df_result.loc[is_in_map, value_col] * conversion_factors
-            df_result.loc[is_in_map, unit_col] = df_result.loc[is_in_map, unit_col].map(unit_targets)
+            conversion_factors = df_result.loc[cur_is_in_map, currency_col].map(cur_factors)
+            df_result.loc[cur_is_in_map, value_col] = df_result.loc[cur_is_in_map, value_col] * conversion_factors
+            df_result.loc[cur_is_in_map, currency_col] = df_result.loc[cur_is_in_map, currency_col].map(cur_targets)
         
         # Filter to valid rows only
         df_filtered = df_result[valid_mask].copy()

@@ -10,10 +10,3 @@ default_units:
   area: "KHA"          # thousand hectares
   volume: "MM3"        # million cubic meters
   transport: "roundtrips"    # roundtrips ferries and planes
-
-# Optional: Define which categories should be selected by default
-# If not specified, all categories will be selected
-default_selected_categories:
-  - mass
-  - energy
-  - currency

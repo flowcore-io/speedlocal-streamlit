@@ -72,10 +72,15 @@ class UnitManager:
                 for col in ['unit', 'cur']:
                     if col in df.columns:
                         units = df[col].dropna().unique()
+                        if col == 'cur':
+                            print(f"DEBUG: Found {len(units)} unique currencies: {units}")
+                        
                         for unit in units:
                             # Filter out 'NA' string and empty values
                             if unit and str(unit).upper() != 'NA':
                                 category = converter.get_category(unit)
+                                if col == 'cur':
+                                    print(f"DEBUG: Currency '{unit}' → category '{category}'")
                                 if category:
                                     categories.add(category)
         
