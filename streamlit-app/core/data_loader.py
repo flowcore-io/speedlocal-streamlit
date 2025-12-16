@@ -145,6 +145,42 @@ class DataLoaderManager:
         except Exception as e:
             st.warning(f"Could not load description tables: {str(e)}")
             return pd.DataFrame()
+    
+    def load_timeslice_metadata(self) -> pd.DataFrame:
+        """
+        Load timeslice metadata from database.
+        
+        Returns:
+            DataFrame with columns: all_ts, Value (hours)
+        """
+        try:
+            # Connect to database
+            conn = connect_to_db(
+                source=self.db_source,
+                is_url=self.is_url,
+                use_cache=True
+            )
+            
+            if conn is None:
+                st.warning("Failed to connect to database for timeslice metadata.")
+                return pd.DataFrame()
+            
+            # Extract timeslice metadata
+            query_helper = DuckDBQueryHelper(conn)
+            ts_metadata = query_helper.fetch_timeslice_metadata()
+            
+            # Close connection
+            conn.close()
+            
+            if not ts_metadata.empty:
+                st.sidebar.success(f"✓ Loaded {len(ts_metadata)} timeslice definitions")
+            
+            return ts_metadata
+            
+        except Exception as e:
+            st.warning(f"Could not load timeslice metadata: {str(e)}")
+            return pd.DataFrame()
+
     def load_unit_conversions(self, conversions_csv: str = "inputs/unit_conversions.csv") -> pd.DataFrame:
         """
         Load unit conversion table.
@@ -215,8 +251,6 @@ class DataLoaderManager:
         self.table_dfs = updated_tables
         return self.table_dfs
 
-
-# data_loader.py, after DataLoaderManager class
 
 def create_all_description_mappings(desc_df: pd.DataFrame) -> Dict[str, Any]:
     """

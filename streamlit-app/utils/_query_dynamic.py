@@ -113,7 +113,28 @@ class DuckDBQueryHelper:
         except Exception as e:
             print(f"Error fetching filtered data: {e}")
             return pd.DataFrame()
-    
+
+    def fetch_timeslice_metadata(self) -> pd.DataFrame:
+        """
+        Fetch timeslice metadata from all_ts_data table.
+        
+        Returns:
+            DataFrame with unique combinations of all_ts and Value (hours)
+            Columns: all_ts, Value
+        """
+        try:
+            query = """
+            SELECT DISTINCT all_ts, Value 
+            FROM all_ts_data 
+            WHERE all_ts IS NOT NULL
+            ORDER BY all_ts
+            """
+            df = self.conn.sql(query).df()
+            return df
+        except Exception as e:
+            print(f"Error fetching timeslice metadata: {e}")
+            return pd.DataFrame()
+        
     def list_tables(self) -> list:
         """Return a list of available tables in the database."""
         try:

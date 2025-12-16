@@ -72,14 +72,37 @@ class SubAnnualModule(BaseVisualizationModule):
         # Labels are already mapped to descriptions by DataLoaderManager
         return df_combined
     
-    # subannual/module.py
+    def _get_available_weeks(self) -> List[str]:
+        """
+        Get list of available weeks from timeslice metadata.
+        
+        Returns:
+            List of week codes (e.g., ['W03', 'W09', 'W16', 'W42'])
+        """
+        # Get timeslice metadata from session
+        ts_metadata = st.session_state.get('ts_metadata', pd.DataFrame())
+        
+        if ts_metadata.empty or 'all_ts' not in ts_metadata.columns:
+            # Fallback to hardcoded list if metadata not available
+            return ['W03', 'W09', 'W16', 'W42']
+        
+        # Extract unique week prefixes (first 3 characters)
+        weeks = ts_metadata['all_ts'].str[:3].unique()
+        
+        # Filter to only week codes (start with 'W')
+        weeks = [w for w in weeks if str(w).startswith('W')]
+        
+        # Sort naturally (W03, W09, W16, W42)
+        weeks = sorted(weeks, key=lambda x: int(x[1:]) if len(x) > 1 and x[1:].isdigit() else 0)
+        
+        return weeks
 
     def _render_visualization(self, df: pd.DataFrame, filters: Dict) -> None:
         """Render interface."""
         st.header("Subannual Profile")
         
         # Filter controls
-        col1, col2, col3 = st.columns(3)
+        col1, col2, col3, col4 = st.columns(4)
         
         with col1:
             scenarios = sorted(df['scen'].unique())
@@ -101,17 +124,38 @@ class SubAnnualModule(BaseVisualizationModule):
                 index=0,
                 key="tp_region"
             )
+        
+        with col4:
+            # Get available weeks from metadata (dynamically loaded)
+            available_weeks = self._get_available_weeks()
+            
+            selected_weeks = st.multiselect(
+                "Weeks",
+                options=available_weeks,
+                default=[],
+                key="tp_weeks",
+                help="Select specific weeks to display (leave empty to show all weeks)"
+            )
 
-        # Filter data
+        # Filter data by scenario/year/region
         df_plot = df[
             (df['scen'] == selected_scenario) &
             (df['year'] == selected_year) &
             (df['regfrom'] == selected_region)
         ]
-
+        
         if df_plot.empty:
             self.show_warning("No data for selected filters.")
             return
+        
+        # Filter to selected weeks (ONLY if weeks are selected)
+        if selected_weeks:  # ← CHANGED: Only filter if user selected specific weeks
+            week_pattern = '|'.join([f'^{w}' for w in selected_weeks])
+            df_plot = df_plot[df_plot['all_ts'].str.match(week_pattern)]
+            
+            if df_plot.empty:
+                self.show_warning("No data for selected week(s).")
+                return
         
         # Transform to wide format
         df_wide = self._transform_to_wide(df_plot)
@@ -219,7 +263,7 @@ class SubAnnualModule(BaseVisualizationModule):
         y_axes = self.profile_config.get('y_axes', {})
         
         # Get production plot config (assuming all data_cols are production)
-        production_config = plot_groups.get('production', {})
+        production_config = plot_groups.get('production', {}) #SHOULD CHANGE THIS SYSTEM IN THE FUTURE
         
         # Build series specification
         series_spec = {
