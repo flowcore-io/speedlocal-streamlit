@@ -21,7 +21,7 @@ from utils._plotting import TimesReportPlotter
 class SubAnnualModule(BaseVisualizationModule):
     def __init__(self):
         super().__init__(
-            name="Sub-Annual Profile",
+            name="Subannual Profile",
             description="subannual visualization",
             order=4,
             enabled=True
@@ -32,8 +32,9 @@ class SubAnnualModule(BaseVisualizationModule):
         self.profile_config = self._load_profile_config()
 
     def get_required_tables(self) -> list:
+#        return ["energy_subannual", "elc_price"]
         return ["energy_subannual"]
-    
+
     def get_config(self) -> Dict[str, Any]:
         """Return module configuration."""
         return {
@@ -130,7 +131,7 @@ class SubAnnualModule(BaseVisualizationModule):
             available_weeks = self._get_available_weeks()
             
             selected_weeks = st.multiselect(
-                "Weeks",
+                "TimeSlice",
                 options=available_weeks,
                 default=[],
                 key="tp_weeks",
@@ -149,7 +150,7 @@ class SubAnnualModule(BaseVisualizationModule):
             return
         
         # Filter to selected weeks (ONLY if weeks are selected)
-        if selected_weeks:  # ← CHANGED: Only filter if user selected specific weeks
+        if selected_weeks:  
             week_pattern = '|'.join([f'^{w}' for w in selected_weeks])
             df_plot = df_plot[df_plot['all_ts'].str.match(week_pattern)]
             
@@ -179,10 +180,7 @@ class SubAnnualModule(BaseVisualizationModule):
         if not data_cols:
             self.show_warning("No data series to plot")
             return
-
-        # Create plot
-        # st.subheader(f"Profile: {selected_scenario} — {selected_year} — {selected_region}")
-
+        
         try:
             # Get unit label
             unit_label = self._get_unit_label(df_plot)

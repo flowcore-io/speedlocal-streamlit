@@ -36,7 +36,7 @@ plot_groups:
 
 y_axes:
   primary:
-    title: "Value"  # Units appended dynamically by module
+    title: "Energy"  # Units appended dynamically by module
     side: left
     showgrid: false
     

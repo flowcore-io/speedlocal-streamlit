@@ -87,6 +87,11 @@ def main():
                 session_mgr.set('unit_converter', converter)
             else:
                 session_mgr.set('unit_converter', None)
+        
+        # Load timeslice metadata
+        with st.spinner("Loading timeslice metadata..."):
+            ts_metadata = data_loader.load_timeslice_metadata()
+            session_mgr.set('ts_metadata', ts_metadata)
 
         # Store in session
         session_mgr.set('data_loader', data_loader)
