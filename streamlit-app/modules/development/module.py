@@ -44,7 +44,6 @@ class DevelopmentModule(BaseModule):
         """Render Development dashboard."""
         
         st.header("🔧 Development & Debug")
-        st.info("This section is for development and debugging purposes.")
         
         # Get description data from session
         desc_df = self._get_desc_df()
@@ -166,11 +165,13 @@ class DevelopmentModule(BaseModule):
             n_rows = st.slider("Number of rows to display", 5, 100, 10)
             st.dataframe(df_filtered.head(n_rows), use_container_width=True)
             st.divider()
-            st.subheader("📊 Generate Profile Mapping Template")
+            st.subheader("Generate Unique Mapping Template")
             
             st.info(
                 "This tool generates a unique combination of data identifiers "
-                "for time profile visualization configuration."
+                "originally for subannual graphs, but not being used currently. "
+                "The original idea was that the type of graph would be different " \
+                "depending on plot_group column if it's production, consumption, or storage."
             )
             
             # Check if this looks like a time series table
@@ -252,13 +253,8 @@ class DevelopmentModule(BaseModule):
                             desc_mapping[label_source]
                         ).fillna(unique_combinations['label'])  # ← This overwrites the fallback
                         
-                        # Count how many were mapped
-                        mapped_count = unique_combinations['label_with_desc'].ne(unique_combinations['label']).sum()
-                        st.success(f"✅ Applied {label_source} descriptions ({mapped_count}/{len(unique_combinations)} labels mapped)")
+                        st.success(f"✅ Applied {len(unique_combinations)} {label_source} descriptions")
                         
-                        # DEBUG: Show what we got
-                        st.write("**Sample results:**")
-                        st.dataframe(unique_combinations[['label', 'label_with_desc']].head(3))
                     else:
                         st.warning(f"⚠️ No description mapping available for '{label_source}'")
                 else:

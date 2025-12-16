@@ -49,7 +49,6 @@ class KeyInsightsModule(BaseModule):
         # Placeholder metrics
         st.markdown("---")
         st.subheader("📊 Key Performance Indicators")
-        st.info("Coming soon: Summary metrics calculated from scenario data")
         
         col1, col2, col3, col4 = st.columns(4)
         
@@ -104,15 +103,3 @@ class KeyInsightsModule(BaseModule):
         except FileNotFoundError:
             st.info("💡 Add `images/map.png` to display project map")
         
-        # Future development notes
-        st.markdown("---")
-        with st.expander("🚀 Planned Features"):
-            st.markdown("""
-            **Next Development Steps:**
-            1. ✅ Modular architecture implementation
-            2. 🔄 Scenario comparison tools
-            3. 📊 Automated KPI calculations
-            4. 🗺️ Regional comparison dashboard
-            5. 📈 Trend analysis and forecasting
-            6. 📄 Executive report generation
-            """)

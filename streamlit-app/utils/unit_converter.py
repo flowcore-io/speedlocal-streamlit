@@ -195,8 +195,6 @@ class UnitConverter:
         if from_unit == to_unit:
             return True
         return self.get_conversion_factor(from_unit, to_unit) is not None
-    
-    # unit_converter.py, line ~200 - REPLACE entire method
 
     def convert_and_filter(
         self,
@@ -325,8 +323,6 @@ class UnitConverter:
         
         return df_filtered, exclusion_info
 
-    # unit_converter.py - add this NEW method to UnitConverter class
-
     def _build_conversion_maps(
         self,
         df: pd.DataFrame,
@@ -398,77 +394,6 @@ class UnitConverter:
                         cur_targets[cur] = target
         
         return unit_factors, unit_targets, cur_factors, cur_targets
-    # Keep legacy methods for backwards compatibility
-    def filter_by_categories(
-        self,
-        df: pd.DataFrame,
-        selected_categories: List[str],
-        unit_col: str = 'unit'
-    ) -> Tuple[pd.DataFrame, List[str]]:
-        """
-        Legacy method: Filter dataframe to only include rows with units in selected categories.
-        
-        Note: Consider using convert_and_filter() for new code.
-        """
-        if df.empty or unit_col not in df.columns:
-            return df, []
-        
-        unknown_units = []
-        valid_units = []
-        
-        for unit in df[unit_col].dropna().unique():
-            if unit in self.unit_to_category:
-                category = self.unit_to_category[unit]
-                if category in selected_categories:
-                    valid_units.append(unit)
-            else:
-                unknown_units.append(unit)
-        
-        if valid_units:
-            df_filtered = df[df[unit_col].isin(valid_units)].copy()
-        else:
-            df_filtered = pd.DataFrame()
-        
-        return df_filtered, unknown_units
-    
-    def convert_dataframe(
-        self,
-        df: pd.DataFrame,
-        target_units: Dict[str, str],
-        unit_col: str = 'unit',
-        value_col: str = 'value'
-    ) -> pd.DataFrame:
-        """
-        Legacy method: Convert values in dataframe based on target units.
-        
-        Note: Consider using convert_and_filter() for new code.
-        """
-        if df.empty or unit_col not in df.columns or value_col not in df.columns:
-            return df
-        
-        df_converted = df.copy()
-        
-        for idx, row in df_converted.iterrows():
-            current_unit = row[unit_col]
-            
-            if pd.isna(current_unit):
-                continue
-            
-            category = self.unit_to_category.get(current_unit)
-            
-            if category and category in target_units:
-                target_unit = target_units[category]
-                
-                if current_unit == target_unit:
-                    continue
-                
-                factor = self.get_conversion_factor(current_unit, target_unit)
-                
-                if factor is not None:
-                    df_converted.at[idx, value_col] = row[value_col] * factor
-                    df_converted.at[idx, unit_col] = target_unit
-        
-        return df_converted
 
 
 ## Additional unit-realted helper functions
