@@ -38,7 +38,7 @@ class SubAnnualModule(BaseVisualizationModule):
         """Return module configuration."""
         return {
             "apply_global_filters": True,
-            "apply_unit_conversion": False,
+            "apply_unit_conversion": True,
             "show_module_filters": True,
             "filterable_columns": ['techgroup', 'prc'],
             "default_columns": ['techgroup']
