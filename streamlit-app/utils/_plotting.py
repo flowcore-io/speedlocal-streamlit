@@ -245,7 +245,8 @@ class TimesReportPlotter:
                         marker_color=color,
                         opacity=opacity,
                         yaxis=y_axis,
-                        marker_line_width=0
+                        marker_line_width=0,
+                        showlegend=True
                     ))
                 
                 elif series_type == 'line':
@@ -261,7 +262,8 @@ class TimesReportPlotter:
                         y=df[col],
                         mode='lines',
                         line=line_config,
-                        yaxis=y_axis
+                        yaxis=y_axis,
+                        showlegend=True
                     ))
     
     def _add_grouped_traces(
@@ -403,7 +405,8 @@ class TimesReportPlotter:
                 y=df[y_col],
                 marker_color=color,
                 opacity=opacity,
-                yaxis=y_axis
+                yaxis=y_axis,
+                showlegend=True
             ))
         
         elif series_type == 'line':
@@ -448,7 +451,7 @@ class TimesReportPlotter:
             'title': title,
             'height': height,
             'xaxis': {
-                'title': x_col,
+                'title': 'Timeslice' if x_col == 'all_ts' else x_col,
                 'tickfont': dict(size=10),
                 'type': xaxis_type
             },
@@ -460,13 +463,13 @@ class TimesReportPlotter:
             },
             'legend': dict(
                 orientation="h",
-                yanchor="top",
-                y=-0.15,
+                yanchor="bottom",
+                y=-0.30,
                 xanchor="center",
                 x=0.5,
                 font=dict(size=11)
             ),
-            'margin': dict(t=90, b=120, l=60, r=60)
+            'margin': dict(t=90, b=150, l=60, r=60)
         }
         # Set explicit tick values if we have numeric data
         if df is not None and x_col in df.columns:
