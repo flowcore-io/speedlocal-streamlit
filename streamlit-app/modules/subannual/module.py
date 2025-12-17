@@ -189,7 +189,7 @@ class SubAnnualModule(BaseVisualizationModule):
             plot_spec = self._build_plot_spec_from_config(
                 data_cols=data_cols,
                 unit_label=unit_label,
-                title=f"Time Profile: {selected_scenario} — {selected_year} — {selected_region}"
+                title=f"Subannual Profile: {selected_scenario} — {selected_year} — {selected_region}"
             )
 
             plotter = TimesReportPlotter(df_wide)
