@@ -3,10 +3,11 @@ Base module class that all visualization modules inherit from.
 """
 
 from abc import ABC, abstractmethod
-from typing import Dict, Any
+from typing import Dict, Any, List, Optional
 import streamlit as st
 import pandas as pd
 
+from utils.unit_converter import extract_unit_label
 
 class BaseModule(ABC):
     """Base class for all Streamlit app modules."""
@@ -25,7 +26,6 @@ class BaseModule(ABC):
         self.description = description
         self.order = order
         self.enabled = enabled
-        self._data_cache = {}
     
     @abstractmethod
     def get_required_tables(self) -> list:
@@ -44,13 +44,24 @@ class BaseModule(ABC):
         Args:
             table_dfs: Dictionary of loaded DataFrames
             filters: Active filter settings
-            data_loader: DataLoaderManager instance for additional queries
         """
         pass
     
     @abstractmethod
-    def get_filter_config(self) -> Dict[str, Any]:
-        """Return configuration for filters specific to this module."""
+    def get_config(self) -> Dict[str, Any]:
+        """
+        Return configuration for this module.
+        
+        Configuration includes:
+        - apply_global_filters: Whether to apply global scenario filters
+        - apply_unit_conversion: Whether to show unit conversion controls
+        - show_module_filters: Whether to show additional filter options
+        - filterable_columns: List of columns that can be filtered
+        - default_columns: List of columns to filter by default
+        
+        Returns:
+            Dictionary of configuration settings
+        """
         pass
     
     def validate_data(self, table_dfs: Dict[str, pd.DataFrame]) -> bool:
@@ -130,7 +141,7 @@ class BaseModule(ABC):
                     desc_mapping[col]
                 ).fillna(df_with_desc[col])
         
-        return df_with_desc 
+        return df_with_desc
 
     def show_error(self, message: str) -> None:
         """Display error message."""
@@ -147,3 +158,200 @@ class BaseModule(ABC):
     def show_success(self, message: str) -> None:
         """Display success message."""
         st.success(f"[{self.name}] {message}")
+    
+    def _apply_unit_conversion(
+        self,
+        df: pd.DataFrame,
+        filters: Dict[str, Any]
+    ) -> pd.DataFrame:
+        """
+        Apply unit conversion if enabled in module config.
+        Standardizes the pattern used across all modules.
+        
+        Args:
+            df: DataFrame to convert
+            filters: Filters containing unit_config
+            
+        Returns:
+            Converted DataFrame or original if conversion not enabled/available
+        """
+        if df.empty:
+            return df
+        
+        # Check if module wants unit conversion
+        config = self.get_config()
+        if not config.get('apply_unit_conversion', False):
+            return df
+        
+        # Get unit manager from session
+        unit_mgr = st.session_state.get('unit_manager')
+        
+        if not unit_mgr or 'unit_config' not in filters:
+            return df
+        
+        # Apply conversion
+        unit_config = unit_mgr.get_unit_config_from_filters(filters)
+        df_converted, _ = unit_mgr.apply_unit_conversion(
+            df,
+            unit_config,
+            section_title=self.name
+        )
+        
+        return df_converted
+    
+    def _get_unit_label(self, df: pd.DataFrame) -> str:
+        """
+        Extract unit label from dataframe for axis labels.
+        Wrapper around utility function.
+        """
+        return extract_unit_label(df)
+    
+    def _render_unit_controls(
+        self,
+        table_dfs: Dict[str, pd.DataFrame],
+        filters: Dict[str, Any],
+        expanded: bool = False
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Render unit conversion controls if enabled in module config.
+        
+        Args:
+            table_dfs: All available tables
+            filters: Current filters (currently unused, reserved for state restoration)
+            expanded: Whether expander should be open by default
+        
+        Returns:
+            Unit config dict or None if not applicable
+        """
+        # Check if module wants unit conversion
+        config = self.get_config()
+        if not config.get('apply_unit_conversion', False):
+            return None
+        
+        # Get unit manager from session
+        unit_mgr = st.session_state.get('unit_manager')
+        
+        if not unit_mgr:
+            return None
+        
+        # Render controls
+        unit_config = unit_mgr.render_unit_controls_if_enabled(
+            module=self,
+            table_dfs=table_dfs,
+            expanded=expanded
+        )
+        
+        return unit_config
+
+class BaseVisualizationModule(BaseModule):
+    """
+    Standard pattern for visualization modules.
+    
+    Provides a consistent render flow:
+    1. Validate data
+    2. Render unit controls
+    3. Load and prepare data
+    4. Apply filters
+    5. Apply unit conversion
+    6. Render visualization
+    
+    Subclasses must implement:
+    - _load_and_prepare_data()
+    - _render_visualization()
+    """
+    
+    def render(
+        self,
+        table_dfs: Dict[str, pd.DataFrame],
+        filters: Dict[str, Any]
+    ) -> None:
+        """
+        Standard render flow for visualization modules.
+        
+        Args:
+            table_dfs: Dictionary of loaded DataFrames
+            filters: Active filter settings
+        """
+        # 1. Validate data
+        if not self.validate_data(table_dfs):
+            self.show_error("Required data tables not available.")
+            return
+        
+        # 2. Render unit controls (if enabled in config)
+        unit_config = self._render_unit_controls(table_dfs, filters, expanded=False)
+        if unit_config:
+            filters['unit_config'] = unit_config
+        
+        st.divider()
+        
+        # 3. Show conversion summary (if unit conversion is enabled)
+        # if unit_config:
+        #     unit_mgr = st.session_state.get('unit_manager')
+        #     if unit_mgr:
+        #         unit_mgr.show_conversion_summary()
+        
+        # 4. Load and prepare data (module-specific)
+        df = self._load_and_prepare_data(table_dfs)
+        
+        if df is None or df.empty:
+            self.show_warning("No data available after loading.")
+            return
+        
+        # 5. Apply filters
+        df = self._apply_filters(df, filters)
+        
+        if df.empty:
+            self.show_warning("No data available after applying filters.")
+            return
+        
+        # 6. Apply unit conversion (if enabled)
+        df = self._apply_unit_conversion(df, filters)
+        
+        if df.empty:
+            self.show_warning("No data remaining after unit conversion.")
+            return
+        
+        # 7. Render visualization (module-specific)
+        self._render_visualization(df, filters)
+    
+    @abstractmethod
+    def _load_and_prepare_data(
+        self,
+        table_dfs: Dict[str, pd.DataFrame]
+    ) -> pd.DataFrame:
+        """
+        Load and prepare data for visualization.
+        
+        This is where modules should:
+        - Get their required tables
+        - Combine multiple tables if needed
+        - Apply initial filtering (like attr='f_in')
+        - Apply description mappings
+        
+        Args:
+            table_dfs: Dictionary of available tables
+            
+        Returns:
+            Prepared DataFrame ready for filtering and visualization
+        """
+        pass
+    
+    @abstractmethod
+    def _render_visualization(
+        self,
+        df: pd.DataFrame,
+        filters: Dict[str, Any]
+    ) -> None:
+        """
+        Render the actual visualization.
+        
+        This is where modules should:
+        - Create plots
+        - Render interactive controls
+        - Display results
+        
+        Args:
+            df: Filtered and converted DataFrame
+            filters: Active filters (for reference)
+        """
+        pass

@@ -6,8 +6,10 @@ from typing import Dict
 from modules.base_module import BaseModule
 from modules.key_insights.module import KeyInsightsModule
 from modules.energy_emissions.module import EnergyEmissionsModule
-from modules.energy_emissions_v2.module import EnergyEmissionsModuleV2
+
 from modules.energy_map.module import EnergyMapModule
+from modules.subannual.module import SubAnnualModule
+
 
 
 from modules.development.module import DevelopmentModule
@@ -22,24 +24,25 @@ class ModuleRegistry:
     
     def _register_default_modules(self) -> None:
         """Register all default modules."""
-        # Register Key Insights module first (order=0)
+        # Register Key Insights module first 
         self.register_module("key_insights", KeyInsightsModule())
         
-        # # Register Energy/Emissions module (order=1)
-        # self.register_module("energy_emissions", EnergyEmissionsModule())
+        # Register Energy/Emissions module 
+        self.register_module("energy_&_emissions", EnergyEmissionsModule())
+
+        self.register_module("energy_flow_map", EnergyMapModule())
+
+        # Register Time Profile module 
+        # self.register_module("time_profile", TimeProfileModule())
+
+        # Register Time Profile module 
+        self.register_module("subannual_profile", SubAnnualModule())
         
-        # Register Energy/Emissions module (order=1)
-        self.register_module("energy_emissions_v2", EnergyEmissionsModuleV2())
-
-        self.register_module("energy_map", EnergyMapModule())
-
         # Future modules can be added here:
-        # self.register_module("land_use", LandUseModule())
-        # self.register_module("economics", EconomicsModule())
-        # self.register_module("daynite", DayNiteModule())
-
-        # Register Development module (order=999 = always last)
         
+        # self.register_module("economics", EconomicsModule())
+
+        # Register Development module 
         self.register_module("development", DevelopmentModule())
 
     def register_module(self, key: str, module: BaseModule) -> None:

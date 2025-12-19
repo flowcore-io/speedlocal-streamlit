@@ -1,9 +1,21 @@
-streamlit>=1.28.0
-duckdb>=0.9.0
-pandas>=1.5.0
-plotly>=5.0.0
-requests>=2.25.0
-pyyaml>=6.0.0
-folium>=0.14.0
-streamlit-folium>=0.13.0
-geopy>=2.3.0
+# Streamlit TIMES Data Explorer - Requirements
+# Core framework
+streamlit>=1.32.0
+
+# Database and data processing
+duckdb>=0.10.0
+pandas>=2.0.0
+
+# Visualization
+plotly>=5.18.0
+folium>=0.15.0
+
+# Configuration and utilities
+pyyaml>=6.0
+requests>=2.31.0
+
+# Geocoding (for map features)
+geopy>=2.4.0
+
+# Optional but recommended
+openpyxl>=3.1.0  # For Excel file support

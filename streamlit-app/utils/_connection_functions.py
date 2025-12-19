@@ -163,7 +163,8 @@ def download_database(url, use_cache=True, progress_callback=None, message_callb
 
 # --- Usage ---
 if __name__ == "__main__":
-    url = "https://speedlocal.flowcore.app/api/duckdb/share/de0274a3e2da3eed3f920dab28c81bf8"
+    url = "https://speedlocal.flowcore.app/api/duckdb/share/94c720eedad6124a2a41b0a1e07f0cd0"
+    
 
     conn = connect_to_db(
         url,

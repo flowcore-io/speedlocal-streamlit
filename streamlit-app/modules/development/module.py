@@ -1,20 +1,15 @@
 """
-Key Insights module for stakeholder-facing dashboard.
-Refactored from the Development tab in original times_app_test.py.
+Development module for debugging.
 """
 
 import streamlit as st
 import pandas as pd
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from pathlib import Path
 import sys
 
 sys.path.append(str(Path(__file__).parent.parent))
 from base_module import BaseModule
-
-# Import DuckDBQueryHelper for extract_desc_tables
-sys.path.append(str(Path(__file__).parent.parent.parent / "utils"))
-from _query_dynamic import DuckDBQueryHelper
 
 
 class DevelopmentModule(BaseModule):
@@ -31,13 +26,13 @@ class DevelopmentModule(BaseModule):
     def get_required_tables(self) -> list:
         return []  # Works with whatever is available
     
-    def get_filter_config(self) -> Dict[str, Any]:
+    def get_config(self) -> Dict[str, Any]:
+        """Return module configuration."""
         return {
             "apply_global_filters": True,
             "apply_unit_conversion": False,
-            "default_unit_categories": ['energy','mass'],  
-            "show_module_filters": False,
-            "filterable_columns": ['scen', 'year'],
+            "show_module_filters": True,
+            "filterable_columns": ['scen', 'year', 'all_ts', 'prc'],
             "default_columns": []
         }
     
@@ -46,18 +41,20 @@ class DevelopmentModule(BaseModule):
         table_dfs: Dict[str, pd.DataFrame],
         filters: Dict[str, Any]
     ) -> None:
-        """Render Key Insights dashboard."""
-        
         """Render Development dashboard."""
         
         st.header("🔧 Development & Debug")
-        st.info("This section is for development and debugging purposes.")
         
         # Get description data from session
         desc_df = self._get_desc_df()
         
-        # Create two main sections
-        debug_tab, desc_tab, data_tab = st.tabs(["🔍 Filter Debug", "📋 Description Tables", "📊 Data Inspector"])
+        # Create tabs
+        debug_tab, desc_tab, data_tab = st.tabs([
+            "🔍 Filter Debug", 
+            "📋 Description Tables", 
+            "📊 Data Inspector"
+            # "🧪 Plot Tester"
+        ])
         
         with debug_tab:
             self._render_filter_debug(table_dfs, filters)
@@ -66,289 +63,287 @@ class DevelopmentModule(BaseModule):
             self._render_description_tables(desc_df)
 
         with data_tab:
-            self._render_data_inspector(table_dfs)
+            self._render_data_inspector(table_dfs, filters)
+        
+        # with plot_test_tab: 
+        #     self._render_plot_tester(table_dfs)
     
-    def _render_filter_debug(
-        self, 
-        table_dfs: Dict[str, pd.DataFrame],
-        filters: Dict[str, Any]
-    ) -> None:
-        """Render filter debug information."""
+    def _render_filter_debug(self, table_dfs: Dict[str, pd.DataFrame], filters: Dict[str, Any]) -> None:
+        """Render filter debugging information."""
+        st.subheader("Active Filters")
         
-        st.subheader("Filter Debug Information")
-        
-        # Get filter config
-        filter_config = self.get_filter_config()
-        apply_global = filter_config.get('apply_global_filters', True)
-        
-        # Show filter status
-        col1, col2 = st.columns(2)
-        with col1:
-            st.metric(label="Global Filters Applied", value="Yes" if apply_global else "No")
-        with col2:
-            st.metric(label="Active Filter Count", value=len(filters))
-        
-        # Show active filters
-        st.markdown("#### Active Filters")
         if filters:
-            filter_df = pd.DataFrame([
-                {"Column": col, "Selected Values": ", ".join(map(str, vals[:3])) + (f" (+{len(vals)-3} more)" if len(vals) > 3 else "")}
-                for col, vals in filters.items()
-            ])
-            st.dataframe(filter_df, use_container_width=True, hide_index=True)
+            st.json(filters)
         else:
-            st.info("No filters currently applied")
+            st.info("No filters currently active")
         
-        # Show row counts
-        st.markdown("#### Data Row Counts")
+        st.subheader("Available Tables")
+        st.write(f"Total tables: {len(table_dfs)}")
         
-        combined_df = pd.concat([df for df in table_dfs.values() if not df.empty], ignore_index=True)
-        
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.metric(label="Total Rows (All Data)", value=f"{len(combined_df):,}")
-        
-        with col2:
-            if filters:
-                filtered_df = self._apply_filters(combined_df, filters)
-                st.metric(
-                    label="Filtered Rows", 
-                    value=f"{len(filtered_df):,}",
-                    delta=f"{len(filtered_df) - len(combined_df):,}"
-                )
-            else:
-                st.metric(label="Filtered Rows", value=f"{len(combined_df):,}")
-        
-        with col3:
-            if filters and len(combined_df) > 0:
-                pct = (len(filtered_df) / len(combined_df)) * 100
-                st.metric(label="% of Total Data", value=f"{pct:.1f}%")
-            else:
-                st.metric(label="% of Total Data", value="100%")
-        
-        # Show available tables
-        st.markdown("#### Available Tables")
-        table_info = []
         for table_name, df in table_dfs.items():
-            table_info.append({
-                "Table Name": table_name,
-                "Rows": f"{len(df):,}",
-                "Columns": len(df.columns),
-                "Memory (MB)": f"{df.memory_usage(deep=True).sum() / 1024**2:.2f}"
-            })
-        
-        if table_info:
-            st.dataframe(pd.DataFrame(table_info), use_container_width=True, hide_index=True)
-        
-        # Detailed filter impact per table
-        with st.expander("📊 Filter Impact by Table"):
-            for table_name, df in table_dfs.items():
-                if filters:
-                    filtered_table = self._apply_filters(df, filters)
-                    reduction = len(df) - len(filtered_table)
-                    pct_reduction = (reduction / len(df) * 100) if len(df) > 0 else 0
-                    
-                    st.markdown(f"**{table_name}**: {len(df):,} → {len(filtered_table):,} rows "
-                              f"({pct_reduction:.1f}% reduction)")
-                else:
-                    st.markdown(f"**{table_name}**: {len(df):,} rows (no filters)")
+            # Apply filters to show filtered row count
+            df_filtered = self._apply_filters(df, filters)
+            
+            with st.expander(f"📊 {table_name} ({len(df_filtered):,} / {len(df):,} rows after filtering)"):
+                st.write(f"**Columns:** {', '.join(df.columns.tolist())}")
+                st.write(f"**Shape (unfiltered):** {df.shape}")
+                st.write(f"**Shape (filtered):** {df_filtered.shape}")
+                st.dataframe(df_filtered.head(10))
     
-    def _render_description_tables(
-        self,
-        desc_df: pd.DataFrame
-    ) -> None:
-        """Render description tables from session data."""
+    def _render_description_tables(self, desc_df: pd.DataFrame) -> None:
+        """Render description tables."""
+        st.subheader("Description Mappings")
         
-        st.subheader("Description Tables")
-        st.markdown("Tables ending with `_desc` contain human-readable descriptions for IDs used in the data.")
-        
-        if desc_df is None or desc_df.empty:
-            st.warning("No description tables available.")
-            st.info("Description tables are loaded at startup from the database.")
+        if desc_df.empty:
+            st.warning("No description data available")
             return
         
-        # Show summary metrics
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.metric(label="Total Descriptions", value=f"{len(desc_df):,}")
-        with col2:
-            st.metric(label="Unique Sets", value=desc_df['set_name'].nunique())
-        with col3:
-            st.metric(label="Unique Elements", value=desc_df['element'].nunique())
+        # Search functionality
+        search = st.text_input("🔍 Search descriptions", "")
         
-        st.markdown("---")
+        if search:
+            mask = desc_df.apply(lambda row: row.astype(str).str.contains(search, case=False).any(), axis=1)
+            filtered_df = desc_df[mask]
+            st.write(f"Found {len(filtered_df)} matches")
+            st.dataframe(filtered_df, use_container_width=True)
+        else:
+            st.dataframe(desc_df, use_container_width=True)
         
-        # Search/filter functionality
-        st.markdown("#### Search & Filter")
-        
+        # Summary stats
+        st.subheader("Summary")
         col1, col2 = st.columns(2)
-        
         with col1:
-            # Filter by set_name
-            all_sets = ["All"] + sorted(desc_df['set_name'].unique().tolist())
-            selected_set = st.selectbox(
-                "Filter by Set Name",
-                options=all_sets,
-                key="dev_desc_set_filter"
-            )
-        
+            st.metric("Total Descriptions", len(desc_df))
         with col2:
-            # Search by element or description
-            search_term = st.text_input(
-                "Search Element or Description",
-                placeholder="Type to search...",
-                key="dev_desc_search"
-            )
-        
-        # Apply filters
-        filtered_desc = desc_df.copy()
-        
-        if selected_set != "All":
-            filtered_desc = filtered_desc[filtered_desc['set_name'] == selected_set]
-        
-        if search_term:
-            mask = (
-                filtered_desc['element'].str.contains(search_term, case=False, na=False) |
-                filtered_desc['description'].str.contains(search_term, case=False, na=False)
-            )
-            filtered_desc = filtered_desc[mask]
-        
-        # Show filtered count
-        st.info(f"Showing {len(filtered_desc):,} of {len(desc_df):,} descriptions")
-        
-        # Display table
-        st.markdown("#### Description Data")
-        st.dataframe(
-            filtered_desc,
-            use_container_width=True,
-            hide_index=True,
-            column_config={
-                "set_name": st.column_config.TextColumn("Set Name", width="medium"),
-                "element": st.column_config.TextColumn("Element", width="medium"),
-                "description": st.column_config.TextColumn("Description", width="large")
-            }
-        )
-        
-        # Download option
-        st.markdown("---")
-        csv = filtered_desc.to_csv(index=False)
-        st.download_button(
-            label="📥 Download Filtered Data as CSV",
-            data=csv,
-            file_name="description_tables.csv",
-            mime="text/csv"
-        )   
-    def _render_data_inspector(
-        self,
-        table_dfs: Dict[str, pd.DataFrame]
-    ) -> None:
-        """Render data inspector to view loaded dataframes."""
-        
-        st.subheader("📊 Data Inspector")
-        st.markdown("Inspect dataframes loaded by `PandasDFCreator` from `mapping_db_views.csv`")
+            if 'set_name' in desc_df.columns:
+                st.metric("Unique Sets", desc_df['set_name'].nunique())
+    
+    def _render_data_inspector(self, table_dfs: Dict[str, pd.DataFrame], filters: Dict[str, Any]) -> None:
+        """Render data inspector."""
+        st.subheader("Data Inspector")
         
         if not table_dfs:
-            st.warning("No dataframes available. Please reload data.")
+            st.warning("No data tables available")
             return
         
-        # Show summary metrics
-        col1, col2 = st.columns(2)
-        with col1:
-            st.metric(label="Total Tables", value=len(table_dfs))
-        with col2:
-            total_rows = sum(len(df) for df in table_dfs.values())
-            st.metric(label="Total Rows (All Tables)", value=f"{total_rows:,}")
-        
-        st.markdown("---")
-        
-        # Dropdown to select table
-        table_names = list(table_dfs.keys())
+        # Table selector
         selected_table = st.selectbox(
-            "Select Table to Inspect",
-            options=table_names,
-            key="dev_data_inspector_table"
+            "Select table to inspect:",
+            options=list(table_dfs.keys())
         )
         
         if selected_table:
             df = table_dfs[selected_table]
             
-            # Show table info
-            st.markdown(f"### Table: `{selected_table}`")
+            df_filtered = self._apply_filters(df, filters)
             
-            col1, col2, col3, col4 = st.columns(4)
+            # Show filtering info
+            if len(df_filtered) < len(df):
+                st.info(f"Filtered from {len(df):,} rows to {len(df_filtered):,} rows")
+            
+            # Show basic info
+            col1, col2, col3 = st.columns(3)
             with col1:
-                st.metric(label="Rows", value=f"{len(df):,}")
+                st.metric("Rows (filtered)", len(df_filtered))
             with col2:
-                st.metric(label="Columns", value=len(df.columns))
+                st.metric("Columns", len(df_filtered.columns))
             with col3:
-                memory_mb = df.memory_usage(deep=True).sum() / 1024**2
-                st.metric(label="Memory (MB)", value=f"{memory_mb:.2f}")
-            with col4:
-                # Count unique values in key columns if they exist
-                if 'sector' in df.columns:
-                    unique_sectors = df['sector'].nunique()
-                    st.metric(label="Unique Sectors", value=unique_sectors)
+                st.metric("Memory", f"{df_filtered.memory_usage(deep=True).sum() / 1024**2:.2f} MB")
             
-            # Show column info
-            with st.expander("📋 Column Information", expanded=False):
-                col_info = []
-                for col in df.columns:
-                    col_info.append({
-                        "Column": col,
-                        "Type": str(df[col].dtype),
-                        "Non-Null": f"{df[col].notna().sum():,}",
-                        "Null": f"{df[col].isna().sum():,}",
-                        "Unique": f"{df[col].nunique():,}"
-                    })
-                st.dataframe(
-                    pd.DataFrame(col_info),
-                    use_container_width=True,
-                    hide_index=True
-                )
+            # Column information
+            st.subheader("Column Information")
+            col_info = pd.DataFrame({
+                'Column': df_filtered.columns,
+                'Type': df_filtered.dtypes.astype(str),
+                'Non-Null': df_filtered.count(),
+                'Unique': [df_filtered[col].nunique() for col in df_filtered.columns]
+            })
+            st.dataframe(col_info, use_container_width=True)
             
-            # Search/filter functionality
-            st.markdown("#### Filter Data")
+            # Sample data
+            st.subheader("Sample Data")
+            n_rows = st.slider("Number of rows to display", 5, 100, 10)
+            st.dataframe(df_filtered.head(n_rows), use_container_width=True)
+            st.divider()
+            st.subheader("Generate Unique Mapping Template")
             
-            # Let user filter by any column
-            filter_col = st.selectbox(
-                "Filter by column (optional)",
-                options=["None"] + list(df.columns),
-                key="dev_inspector_filter_col"
+            st.info(
+                "This tool generates a unique combination of data identifiers "
+                "originally for subannual graphs, but not being used currently. "
+                "The original idea was that the type of graph would be different " \
+                "depending on plot_group column if it's production, consumption, or storage."
             )
             
-            filtered_df = df.copy()
+            # Check if this looks like a time series table
+            has_timeseries = 'all_ts' in df_filtered.columns
             
-            if filter_col != "None":
-                unique_values = df[filter_col].dropna().unique()
-                if len(unique_values) <= 50:  # Only show multiselect if reasonable number
-                    selected_values = st.multiselect(
-                        f"Select values for {filter_col}",
-                        options=sorted(unique_values.tolist()),
-                        key="dev_inspector_filter_values"
-                    )
-                    if selected_values:
-                        filtered_df = filtered_df[filtered_df[filter_col].isin(selected_values)]
+            if has_timeseries:
+                self._render_profile_mapping_generator(df_filtered, selected_table)
+            else:
+                st.warning(f"Table '{selected_table}' doesn't have 'all_ts' column. Select a time series table.")
+                
+    def _render_profile_mapping_generator(
+        self,
+        df: pd.DataFrame,
+        table_name: str
+    ) -> None:
+        """
+        Generate profile_mapping.csv template from time series data.
+        
+        Uses existing 'label' column from data and applies description mapping.
+        """
+        st.write("**Configuration:**")
+        
+        # Check if label column exists
+        if 'label' not in df.columns:
+            st.error("This table doesn't have a 'label' column. Cannot generate profile mapping.")
+            return
+        
+        # Define columns to exclude from grouping
+        default_exclude = ['scen', 'value', 'file_id', 'year', 'all_ts', 'unit', 'cur']
+        
+        # Let user choose which columns to include
+        available_cols = [col for col in df.columns if col not in default_exclude]
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            grouping_cols = st.multiselect(
+                "Columns to include in mapping:",
+                options=available_cols,
+                default=available_cols,
+                key="profile_mapping_cols",
+                help="Select which columns to include in the profile mapping"
+            )
+        
+        with col2:
+            # Default plot group
+            default_plot_group = st.text_input(
+                "Default plot group:",
+                value="production",
+                key="profile_mapping_plot_group",
+                help="Default plot group for all series (can be edited in CSV)"
+            )
+        
+        if not grouping_cols:
+            st.warning("Select at least one column")
+            return
+        
+        # Generate unique combinations
+        try:
+            # Get unique combinations
+            unique_combinations = df[grouping_cols].drop_duplicates().reset_index(drop=True)
+
+            # ALWAYS initialize label_with_desc (fallback to original)
+            unique_combinations['label_with_desc'] = unique_combinations['label']
+
+            # Apply description mapping to the 'label' column
+            desc_mapping = self._get_desc_mapping()
+
+            if desc_mapping and 'label' in unique_combinations.columns:
+                # Get label source from mapping_db_views.csv
+                label_source = self._detect_label_source_from_mapping(table_name)
+                
+                if label_source:
+                    st.info(f"📋 Label source: **{label_source}**")
+                    
+                    if label_source in desc_mapping:
+                        # Apply the description mapping
+                        unique_combinations['label_with_desc'] = unique_combinations['label'].map(
+                            desc_mapping[label_source]
+                        ).fillna(unique_combinations['label'])  # ← This overwrites the fallback
+                        
+                        st.success(f"✅ Applied {len(unique_combinations)} {label_source} descriptions")
+                        
+                    else:
+                        st.warning(f"⚠️ No description mapping available for '{label_source}'")
                 else:
-                    st.info(f"Column has {len(unique_values)} unique values. Use search below instead.")
+                    st.error(f"❌ Could not determine label source from mapping_db_views.csv for table '{table_name}'")
+            else:
+                st.warning("No description mapping available")
+
+            # Prepare final mapping dataframe
+            n_rows = len(unique_combinations)
+
+            mapping_df = pd.DataFrame({
+                'table': [table_name] * n_rows,
+                'label': unique_combinations['label_with_desc'].tolist(),  # ← Make sure this is here
+                'plot_group': [default_plot_group] * n_rows,
+                'color': [''] * n_rows
+            })
+
+            # Add ALL the original columns as-is (except 'label' which we already added with descriptions)
+            for col in grouping_cols:
+                if col != 'label':  # ← SKIP 'label' - we already added it with descriptions
+                    mapping_df[col] = unique_combinations[col].tolist()
             
-            # Show row count after filtering
-            st.info(f"Showing {len(filtered_df):,} of {len(df):,} rows")
+            # Show preview
+            st.write(f"**Generated {len(mapping_df)} unique series:**")
+            st.dataframe(mapping_df, use_container_width=True)
             
-            # Display dataframe
-            st.markdown("#### Data Preview")
-            st.dataframe(
-                filtered_df,
-                use_container_width=True,
-                height=400
-            )
+            # Show statistics
+            col_a, col_b = st.columns(2)
+            with col_a:
+                st.metric("Unique Series", len(mapping_df))
+            with col_b:
+                if 'label' in grouping_cols:
+                    st.metric("Unique Labels", unique_combinations['label'].nunique())
             
-            # Download option
-            st.markdown("---")
-            csv = filtered_df.to_csv(index=False)
+            # Download button
+            csv_data = mapping_df.to_csv(index=False)
+            
             st.download_button(
-                label=f"📥 Download {selected_table} as CSV",
-                data=csv,
-                file_name=f"{selected_table}_data.csv",
+                label="📥 Download as profile_mapping.csv",
+                data=csv_data,
+                file_name=f"profile_mapping_{table_name}.csv",
                 mime="text/csv",
-                key="dev_inspector_download"
+                help="Download this CSV and place it in your module's config folder"
             )
+            
+        except Exception as e:
+            st.error(f"Error generating mapping: {str(e)}")
+            st.exception(e)
+    
+    def _detect_label_source_from_mapping(self, table_name: str) -> Optional[str]:
+        """
+        Determine what column the 'label' comes from by reading mapping_db_views.csv
+        
+        Returns the column name (e.g., 'subsector', 'techgroup') or None
+        """
+        try:
+            # Try to find the mapping CSV
+            mapping_csv_path = Path("inputs/mapping_db_views.csv")
+            
+            if not mapping_csv_path.exists():
+                return None
+            
+            # Read the mapping CSV
+            mapping_df = pd.read_csv(mapping_csv_path)
+            
+            # Find rows for this table
+            table_rows = mapping_df[mapping_df['table'] == table_name]
+            
+            if table_rows.empty:
+                return None
+            
+            # Get the label column specification
+            label_spec = table_rows['label'].dropna().unique()
+            
+            if len(label_spec) > 0:
+                label_source = str(label_spec[0]).strip().lower()
+                
+                # Common label sources
+                valid_sources = [
+                    'subsector', 'sector', 'techgroup', 'comgroup', 
+                    'prc', 'com', 'service', 'topic', 'attr'
+                ]
+                
+                if label_source in valid_sources:
+                    return label_source
+            
+            return None
+            
+        except Exception as e:
+            st.error(f"Error reading mapping CSV: {e}")
+            return None
+    

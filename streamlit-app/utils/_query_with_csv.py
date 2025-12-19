@@ -19,7 +19,7 @@ class PandasDFCreator:
 
         self.filter_cols = [
             "model", "scen", "sector", "subsector", "service", "techgroup", "comgroup",
-            "topic", "attr", "prc", "com", "all_ts", "regfrom", "regto", "year"
+            "topic", "attr", "prc", "com", "all_ts", "regfrom", "regto", "year", "vntg", "unit", "cur"
         ]
         self.is_url = is_url
         self.use_cache = use_cache
@@ -54,6 +54,11 @@ class PandasDFCreator:
 
             if pd.notna(val) and str(val).lower() != 'nan':
                 val_str = str(val)
+                if val_str.startswith("!"):
+                    excluded_value = val_str[1:].strip()  # Remove the !
+                    conditions.append(f"tr.{col} != '{excluded_value}'")
+                    continue
+                
                 if val_str.startswith("^") or any(x in val_str for x in ["(", "|", ")", ".*", "$", "[", "]", "?"]):
                     patterns = [p.strip() for p in val_str.split(",") if p.strip()]
                     sub_conditions = []
@@ -134,14 +139,75 @@ class PandasDFCreator:
             print(f"Conditions: {conditions}")
 
             df = con.sql(sql).df()
-            print(f"→ Returned {len(df)} rows\n")
+            print(f"→ Returned {len(df)} rows from SQL\n")
 
-            df = con.sql(sql).df()
+            aggregation = row.get('aggregation')
+            if pd.notna(aggregation) and str(aggregation).strip():
+                print(f"Aggregation spec: '{aggregation}'")
+                df = self._apply_aggregation(df, str(aggregation))
+            
+            print(f"→ Final row count: {len(df)}\n")
             dfs.append(df)
+
         if dfs:
             return pd.concat(dfs, ignore_index=True)
         else:
             return pd.DataFrame()  # empty DF if no data matched
+
+    def _apply_aggregation(self, df: pd.DataFrame, aggregation_spec: str) -> pd.DataFrame:
+        """
+        Apply aggregation to DataFrame based on specification.
+        
+        Args:
+            df: DataFrame from SQL query
+            aggregation_spec: Comma-separated column names to group by
+                            (e.g., "label, all_ts" or "sector, com")
+        
+        Returns:
+            Aggregated DataFrame with columns: scen, year, label, [specified cols], value
+        
+        Notes:
+            - Always groups by: scen, year, label (automatically included)
+            - Additional columns from aggregation_spec are added to group_by
+            - Sums the 'value' column
+            - Drops all other columns not in group_by list
+        """
+        if df.empty:
+            return df
+        
+        # Parse aggregation spec (remove whitespace, split by comma)
+        agg_cols = [col.strip() for col in aggregation_spec.split(',') if col.strip()]
+        
+        # Always include these columns in grouping
+        base_group_cols = ['scen', 'year', 'label', 'all_ts', 'unit', 'cur']
+        
+        # Combine base columns with specified aggregation columns
+        group_by_cols = base_group_cols + [col for col in agg_cols if col not in base_group_cols]
+        
+        # Filter to only columns that exist in the DataFrame
+        available_group_cols = [col for col in group_by_cols if col in df.columns]
+        
+        if not available_group_cols:
+            print(f"Warning: No valid aggregation columns found. Returning original DataFrame.")
+            return df
+        
+        # Check if 'value' column exists
+        if 'value' not in df.columns:
+            print(f"Warning: 'value' column not found. Cannot aggregate. Returning original DataFrame.")
+            return df
+        
+        # Group by and sum
+        try:
+            df_aggregated = df.groupby(available_group_cols, as_index=False)['value'].sum()
+            
+            print(f"Aggregation applied: grouped by {available_group_cols}, "
+                f"reduced from {len(df)} to {len(df_aggregated)} rows")
+            
+            return df_aggregated
+        
+        except Exception as e:
+            print(f"Error during aggregation: {e}")
+            return df
 
     def create_all_dataframes(self, con: duckdb.DuckDBPyConnection, map_df: pd.DataFrame) -> dict:
         """Return a dictionary of table_name -> DataFrame"""

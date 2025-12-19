@@ -25,7 +25,7 @@ class EnergyMapModule(BaseModule):
         super().__init__(
             name="Energy Flow Map",
             description="Visualize regional energy flows on interactive map",
-            order=2,  # After Energy & Emissions
+            order=2,  
             enabled=True
         )
         
@@ -36,11 +36,11 @@ class EnergyMapModule(BaseModule):
     def get_required_tables(self) -> list:
         return ["map"]
     
-    def get_filter_config(self) -> Dict[str, Any]:
+    def get_config(self) -> Dict[str, Any]:  
         return {
-            "apply_global_filters": True,  # Get scenario from sidebar
-            "apply_unit_conversion": False,  # Maps don't need unit conversion
-            "show_module_filters": True,
+            "apply_global_filters": True,
+            "apply_unit_conversion": True,  
+            "show_module_filters": False,
             "filterable_columns": ['year', 'com'],
             "default_columns": []
         }
@@ -55,6 +55,28 @@ class EnergyMapModule(BaseModule):
         if not self.validate_data(table_dfs):
             self.show_error("Map data table not available.")
             return
+        
+        # ✅ Get unit manager from session
+        unit_mgr = st.session_state.get('unit_manager')
+        
+        # ✅ Render unit controls
+        unit_config = None
+        if unit_mgr:
+            unit_config = unit_mgr.render_unit_controls_if_enabled(
+                module=self,
+                table_dfs=table_dfs,
+                expanded=False
+            )
+        
+        # ✅ Add to filters if available
+        if unit_config:
+            filters['unit_config'] = unit_config
+        
+        st.divider()
+        
+        # Show conversion summary
+        # if unit_config and unit_mgr:
+        #     unit_mgr.show_conversion_summary()
         
         # Get raw data
         df_raw = table_dfs.get("map")
@@ -77,8 +99,50 @@ class EnergyMapModule(BaseModule):
             self.show_warning("No data available after applying scenario filters.")
             return
         
+        # ✅ Apply unit conversion
+        df_converted = self._apply_unit_conversion_if_enabled(df_filtered, filters)
+        
+        if df_converted.empty:
+            self.show_warning("No data remaining after unit conversion.")
+            return
+        
         # Render map controls and visualization
-        self._render_map_interface(df_filtered)
+        self._render_map_interface(df_converted)
+    
+    def _apply_unit_conversion_if_enabled(
+        self,
+        df: pd.DataFrame,
+        filters: Dict[str, Any]
+    ) -> pd.DataFrame:
+        """Apply unit conversion if enabled in filters."""
+        
+        unit_mgr = st.session_state.get('unit_manager')
+        
+        if unit_mgr and 'unit_config' in filters:
+            unit_config = unit_mgr.get_unit_config_from_filters(filters)
+            df_converted, _ = unit_mgr.apply_unit_conversion(
+                df,
+                unit_config,
+                section_title="Energy Flow Map"
+            )
+            
+            # ✅ Re-aggregate after conversion in case same flows had different units
+            if not df_converted.empty:
+                df_converted = df_converted.groupby(
+                    ['scen', 'year', 'com', 'start', 'end', 'unit'],
+                    as_index=False
+                )['value'].sum()
+            
+            return df_converted
+        
+        # ✅ If no unit conversion, still aggregate to handle any duplicate flows
+        if not df.empty and 'unit' in df.columns:
+            df = df.groupby(
+                ['scen', 'year', 'com', 'start', 'end', 'unit'],
+                as_index=False
+            )['value'].sum()
+        
+        return df
     
     def _transform_data(self, df: pd.DataFrame) -> pd.DataFrame:
         """
@@ -88,7 +152,7 @@ class EnergyMapModule(BaseModule):
             df: Raw DataFrame from mapping_db_views.csv
             
         Returns:
-            DataFrame with columns: scen, year, com, start, end, value
+            DataFrame with columns: scen, year, com, unit, start, end, value
         """
         dfs_to_concat = []
         
@@ -147,7 +211,7 @@ class EnergyMapModule(BaseModule):
         
         # Group by essential columns and aggregate
         df_aggregated = df_combined.groupby(
-            ['scen', 'year', 'com', 'start', 'end'],
+            ['scen', 'year', 'com','unit', 'start', 'end'],
             as_index=False
         )['value'].sum()
         
@@ -161,6 +225,8 @@ class EnergyMapModule(BaseModule):
             df: Transformed and filtered DataFrame
         """
         st.header("🗺️ Energy Flow Map")
+
+        desc_mapping = self._get_desc_mapping()
         
         # Get available filter options
         available_scenarios = sorted(df['scen'].unique())
@@ -188,6 +254,7 @@ class EnergyMapModule(BaseModule):
             selected_fuel = st.selectbox(
                 "Fuel/Commodity",
                 options=available_fuels,
+                format_func=lambda x: f"{desc_mapping.get('com', {}).get(x, x)} ({x})" if desc_mapping else x,
                 key="map_fuel_select"
             )
         
@@ -205,15 +272,20 @@ class EnergyMapModule(BaseModule):
             )
             return
         
+        # Get unit for display (after conversion)
+        unit = df_map['unit'].iloc[0] if 'unit' in df_map.columns else "other"
+        
         # Show data summary
         st.metric(
             label="Total Flow Volume",
-            value=f"{df_map['value'].sum():.1f} PJ",
+            value=f"{df_map['value'].sum():.1f} {unit}",  # Use converted unit
             help="Sum of all flows for selected filters"
         )
         
+        fuel_desc = desc_mapping.get('com', {}).get(selected_fuel, selected_fuel) if desc_mapping else selected_fuel
+
         # Create and render map
-        st.subheader(f"Flow Map: {selected_scenario} — {selected_year} — {selected_fuel}")
+        st.subheader(f"Flow Map: {selected_scenario} — {selected_year} — {fuel_desc}")
         
         with st.spinner("Generating map..."):
             try:

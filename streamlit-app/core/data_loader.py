@@ -5,7 +5,7 @@ Wrapper around the existing data loading functionality.
 
 import streamlit as st
 import pandas as pd
-from typing import Dict, Optional
+from typing import Dict, Optional, Any
 from pathlib import Path
 
 # Import from existing utils
@@ -145,6 +145,42 @@ class DataLoaderManager:
         except Exception as e:
             st.warning(f"Could not load description tables: {str(e)}")
             return pd.DataFrame()
+    
+    def load_timeslice_metadata(self) -> pd.DataFrame:
+        """
+        Load timeslice metadata from database.
+        
+        Returns:
+            DataFrame with columns: all_ts, Value (hours)
+        """
+        try:
+            # Connect to database
+            conn = connect_to_db(
+                source=self.db_source,
+                is_url=self.is_url,
+                use_cache=True
+            )
+            
+            if conn is None:
+                st.warning("Failed to connect to database for timeslice metadata.")
+                return pd.DataFrame()
+            
+            # Extract timeslice metadata
+            query_helper = DuckDBQueryHelper(conn)
+            ts_metadata = query_helper.fetch_timeslice_metadata()
+            
+            # Close connection
+            conn.close()
+            
+            if not ts_metadata.empty:
+                st.sidebar.success(f"✓ Loaded {len(ts_metadata)} timeslice definitions")
+            
+            return ts_metadata
+            
+        except Exception as e:
+            st.warning(f"Could not load timeslice metadata: {str(e)}")
+            return pd.DataFrame()
+
     def load_unit_conversions(self, conversions_csv: str = "inputs/unit_conversions.csv") -> pd.DataFrame:
         """
         Load unit conversion table.
@@ -179,29 +215,90 @@ class DataLoaderManager:
         except Exception as e:
             st.warning(f"Could not load unit conversions: {str(e)}")
             return pd.DataFrame()
+    def apply_label_descriptions(self, desc_df: pd.DataFrame) -> Dict[str, pd.DataFrame]:
+        """
+        Apply descriptions to label columns in all loaded tables.
+        
+        Args:
+            desc_df: Description DataFrame with columns [set_name, element, description]
+            
+        Returns:
+            Updated table_dfs dictionary with label columns mapped to descriptions
+        """
+        if desc_df.empty:
+            return self.table_dfs
+        
+        # Create a flat lookup: element -> description (across all desc tables)
+        label_lookup = {}
+        for _, row in desc_df.iterrows():
+            element = str(row['element'])
+            description = str(row['description'])
+            # Store mapping (last one wins if duplicates exist)
+            label_lookup[element] = description
+        
+        # Apply to each table that has a label column
+        updated_tables = {}
+        for table_name, df in self.table_dfs.items():
+            if df.empty or 'label' not in df.columns:
+                updated_tables[table_name] = df
+                continue
+            
+            # Map label values to descriptions
+            df_updated = df.copy()
+            df_updated['label'] = df_updated['label'].map(label_lookup).fillna(df_updated['label'])
+            updated_tables[table_name] = df_updated
+        
+        self.table_dfs = updated_tables
+        return self.table_dfs
 
-def create_description_mapping(desc_df: pd.DataFrame) -> Dict[str, Dict[str, str]]:
+
+def create_all_description_mappings(desc_df: pd.DataFrame) -> Dict[str, Any]:
     """
-    Create nested dictionary mapping from description DataFrame.
+    Create both flat and nested description mappings from single source.
     
     Args:
-        desc_df: DataFrame with columns [set_name, element, description]
+        desc_df: Description DataFrame with columns [set_name, element, description]
     
     Returns:
-        Nested dict like: {'sector': {'TRA': 'Transport', ...}, 'comgroup': {...}}
+        Dictionary with:
+            - 'nested': Dict[str, Dict[str, str]] - For creating *_desc columns
+            - 'flat': Dict[str, str] - For mapping label column
+    
+    Example:
+        {
+            'nested': {
+                'sector': {'TRA': 'Transport', ...},
+                'comgroup': {'ELC': 'Electricity', ...}
+            },
+            'flat': {
+                'TRA': 'Transport',
+                'ELC': 'Electricity',
+                ...
+            }
+        }
     """
     if desc_df.empty:
-        return {}
+        return {'nested': {}, 'flat': {}}
     
-    mapping = {}
-    
-    # Group by set_name (e.g., 'sector_desc', 'comgroup_desc')
+    # Nested mapping (for _apply_descriptions)
+    nested = {}
     for set_name, group in desc_df.groupby('set_name'):
         # Remove '_desc' suffix to get column name
         # 'sector_desc' -> 'sector'
         column_name = set_name.replace('_desc', '')
         
         # Create mapping: element -> description
-        mapping[column_name] = dict(zip(group['element'], group['description']))
+        nested[column_name] = dict(zip(group['element'], group['description']))
     
-    return mapping
+    # Flat mapping (for label column)
+    flat = {}
+    for _, row in desc_df.iterrows():
+        element = str(row['element'])
+        description = str(row['description'])
+        # Last one wins if duplicates exist
+        flat[element] = description
+    
+    return {
+        'nested': nested,
+        'flat': flat
+    }

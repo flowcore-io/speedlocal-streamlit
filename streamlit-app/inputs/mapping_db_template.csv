@@ -24,7 +24,7 @@ table,model,label,scen,sector,subsector,service,techgroup,comgroup,topic,attr,pr
 "Pull all ENV_CO2F emissions from Industry sector, annual data",,,,,,,,,,,,,,,,,
 emissions,,sector,,Industry,,,,ENV_CO2F,emission,f_out,,,ANNUAL,,,,
 ,,,,,,,,,,,,,,,,,
-,,,,,,,,,,,,,,,,,
+,,,,,,,,"ENV_CO2F,ENV_CO2P",,,,,,,,,
 2. Multiple OR values in one cell,,,,,,,,,,,,,,,,,
 Base or HighCO2 scenarios for either Industry or Transport,,,,,,,,,,,,,,,,,
 emissions,,,Base,Industry,,,,,,,,,,,,,scen

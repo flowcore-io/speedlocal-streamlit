@@ -1,35 +1,23 @@
 """
 Main entry point for the modular TIMES Data Explorer application.
-Refactored from times_app_test.py to support modular architecture.
 """
-
-# Activate the environment
-# conda activate times_viz
-# streamlit run main.py
 
 import streamlit as st
 from pathlib import Path
 import pandas as pd
 
 from core.session_manager import SessionManager
-from core.data_loader import DataLoaderManager,create_description_mapping
+from core.data_loader import DataLoaderManager, create_all_description_mappings
 from core.filter_manager import FilterManager
+from core.unit_manager import UnitManager  
 from config.module_registry import ModuleRegistry
 from components.sidebar import render_sidebar
-#from utils.unit_converter import UnitConverter
 from utils.unit_converter import UnitConverter, ExclusionInfo
-
 
 
 def main():
     """Main Streamlit application entry point."""
     
-    # Debug: Check if main is called multiple times
-    if 'main_call_count' not in st.session_state:
-        st.session_state.main_call_count = 0
-    st.session_state.main_call_count += 1
-    print(f"DEBUG: main() called {st.session_state.main_call_count} times")
-
     # Page configuration
     st.set_page_config(
         page_title="SpeedLocal: TIMES Data Explorer",
@@ -62,6 +50,7 @@ def main():
         session_mgr.clear_pattern('filter')
         session_mgr.clear_pattern('loader')
         session_mgr.clear_pattern('desc')
+        session_mgr.clear_pattern('unit')  
         st.rerun()
     
     # Initialize data loader if not in session
@@ -83,8 +72,11 @@ def main():
         # Load description tables
         with st.spinner("Loading description tables..."):
             desc_df = data_loader.load_description_tables()
-            desc_mapping = create_description_mapping(desc_df)
+            all_mappings = create_all_description_mappings(desc_df)
+            desc_mapping = all_mappings['nested']
         
+            table_dfs = data_loader.apply_label_descriptions(desc_df)
+
         # Load unit conversions
         with st.spinner("Loading unit conversions..."):
             unit_conversions_df = data_loader.load_unit_conversions()
@@ -95,6 +87,11 @@ def main():
                 session_mgr.set('unit_converter', converter)
             else:
                 session_mgr.set('unit_converter', None)
+        
+        # Load timeslice metadata
+        with st.spinner("Loading timeslice metadata..."):
+            ts_metadata = data_loader.load_timeslice_metadata()
+            session_mgr.set('ts_metadata', ts_metadata)
 
         # Store in session
         session_mgr.set('data_loader', data_loader)
@@ -116,6 +113,13 @@ def main():
         session_mgr.set('filter_manager', filter_manager)
     
     filter_manager = session_mgr.get('filter_manager')
+    
+    # Initialize unit manager if not in session
+    if not session_mgr.has('unit_manager'):
+        unit_manager = UnitManager(table_dfs)
+        session_mgr.set('unit_manager', unit_manager)
+    
+    unit_manager = session_mgr.get('unit_manager')
     
     # Get enabled modules
     enabled_modules = module_registry.get_enabled_modules()
@@ -139,46 +143,9 @@ def main():
 
         global_filters = filter_manager.render_global_filters()
         
-        # Unit configuration (dynamic based on active module)
+        # Get active module's config
         active_module = module_registry.get_module(st.session_state.active_module_key)
-        filter_config = active_module.get_filter_config()
-        
-        print(f"DEBUG: Active module = {st.session_state.active_module_key}")
-        print(f"DEBUG: apply_unit_conversion = {filter_config.get('apply_unit_conversion', False)}")
-
-
-        if filter_config.get('apply_unit_conversion', False):
-            # Get active categories from current module's data
-            active_categories = filter_manager.get_active_unit_categories(
-                st.session_state.active_module_key,
-                table_dfs
-            )
-            
-            print(f"DEBUG: active_categories = {active_categories}")
-
-            # Get module's default categories (if specified)
-            #default_categories = filter_config.get('default_unit_categories', ['energy', 'mass'])
-            
-            #print(f"DEBUG: default_categories = {default_categories}")
-
-            # Render unit configuration
-            #unit_config = filter_manager.render_unit_configuration(
-            #    active_categories,
-            #    st.session_state.active_module_key,
-            #    default_categories
-            #)
-            #print(f"DEBUG: unit_config = {unit_config}")
-
-            # Store in session state and global filters
-            #if unit_config:
-            #    st.session_state['global_unit_config'] = unit_config
-            #    global_filters['unit_config'] = unit_config
-            #    
-                # 🔍 DEBUG: Show what's stored
-            #    st.sidebar.write("**DEBUG: Unit Config Stored:**")
-            #    st.sidebar.json(unit_config)
-            #else:
-            #    st.session_state['global_unit_config'] = None
+        config = active_module.get_config()  
 
     # Initialize selected tab in session state
     if 'selected_tab_index' not in st.session_state:
@@ -188,7 +155,7 @@ def main():
     tab_container = st.container()
     
     with tab_container:
-        # Use radio buttons styled as tabs (more reliable than st.tabs for state management)
+        # Use radio buttons styled as tabs
         selected_tab_name = st.radio(
             "Select Module",
             options=module_names,
@@ -211,19 +178,19 @@ def main():
         
         # Render only the selected module
         try:
-            # Get module-specific filter config
-            filter_config = selected_module.get_filter_config()
+            # Get module-specific config
+            config = selected_module.get_config()  
             
             # Check if module wants global filters applied
-            apply_global = filter_config.get('apply_global_filters', True)
+            apply_global = config.get('apply_global_filters', True)
             
             # Render module-specific filters (if any)
             module_filters = {}
-            if filter_config.get('show_module_filters', False):
+            if config.get('show_module_filters', False):
                 with st.expander("📊 Additional Filters", expanded=False):
                     module_filters = filter_manager.render_module_filters(
                         selected_module_key,
-                        filter_config
+                        config
                     )
             
             # Combine filters
