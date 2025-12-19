@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.11](https://github.com/flowcore-io/speedlocal-streamlit/compare/v0.5.10...v0.5.11) (2025-12-19)
+
+
+### Bug Fixes
+
+* merge new subannual module ([f584598](https://github.com/flowcore-io/speedlocal-streamlit/commit/f58459841803070bf05af3f7bf9b58a5950f86d5))
+
 ## [0.5.10](https://github.com/flowcore-io/speedlocal-streamlit/compare/v0.5.9...v0.5.10) (2025-11-22)
 
 
