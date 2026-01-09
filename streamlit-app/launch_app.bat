@@ -1,4 +1,7 @@
 @echo off
+
+cd /d "%~dp0"
+
 REM ============================================
 REM Streamlit TIMES Data Explorer - Launcher
 REM ============================================

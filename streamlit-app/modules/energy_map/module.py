@@ -56,10 +56,10 @@ class EnergyMapModule(BaseModule):
             self.show_error("Map data table not available.")
             return
         
-        # ✅ Get unit manager from session
+        # Get unit manager from session
         unit_mgr = st.session_state.get('unit_manager')
         
-        # ✅ Render unit controls
+        # Render unit controls
         unit_config = None
         if unit_mgr:
             unit_config = unit_mgr.render_unit_controls_if_enabled(
@@ -68,7 +68,7 @@ class EnergyMapModule(BaseModule):
                 expanded=False
             )
         
-        # ✅ Add to filters if available
+        # Add to filters if available
         if unit_config:
             filters['unit_config'] = unit_config
         
@@ -99,7 +99,7 @@ class EnergyMapModule(BaseModule):
             self.show_warning("No data available after applying scenario filters.")
             return
         
-        # ✅ Apply unit conversion
+        # Apply unit conversion
         df_converted = self._apply_unit_conversion_if_enabled(df_filtered, filters)
         
         if df_converted.empty:
@@ -126,7 +126,7 @@ class EnergyMapModule(BaseModule):
                 section_title="Energy Flow Map"
             )
             
-            # ✅ Re-aggregate after conversion in case same flows had different units
+            # Re-aggregate after conversion in case same flows had different units
             if not df_converted.empty:
                 df_converted = df_converted.groupby(
                     ['scen', 'year', 'com', 'start', 'end', 'unit'],
@@ -135,7 +135,7 @@ class EnergyMapModule(BaseModule):
             
             return df_converted
         
-        # ✅ If no unit conversion, still aggregate to handle any duplicate flows
+        # If no unit conversion, still aggregate to handle any duplicate flows
         if not df.empty and 'unit' in df.columns:
             df = df.groupby(
                 ['scen', 'year', 'com', 'start', 'end', 'unit'],

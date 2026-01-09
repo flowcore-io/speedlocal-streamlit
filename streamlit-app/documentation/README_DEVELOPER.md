@@ -25,7 +25,7 @@ See `architecture_detailed.png` for complete class and method diagrams.
 ## 📁 Repository Structure
 
 ```
-times-data-explorer/
+streamlit-app/
 │
 ├── main.py                      # Application entry point
 ├── launch_app.bat              # Windows launcher script
