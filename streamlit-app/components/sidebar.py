@@ -33,7 +33,7 @@ def render_sidebar() -> dict:
     else:
         db_source = st.sidebar.text_input(
             "Database File Path:",
-            value="inputs/speedlocal_times_db_bornholm_v3.duckdb",
+            value="inputs/speedlocal_times_db_bornholm_v260116.duckdb",
             help="Enter the local path to your DuckDB database file"
         )
         is_url = False
