@@ -1,0 +1,28 @@
+# Map display configuration
+
+map_defaults:
+  zoom_start: 8
+  center_lat: 55.12
+  center_lon: 14.92
+  tiles: "CartoDB positron"
+
+line_styles:
+  max_width: 15
+  min_width: 2
+  pulse_color: "#0000FF"
+  base_color: "#b2b2b2"
+  delay: 1000
+  dash_array: [1, 90]
+
+marker_styles:
+  width: 10
+  height: 10
+  fill: "black"
+  opacity: 0.5
+
+popup_styles:
+  font_size: "14px"
+  line_height: 1.6
+  width: 150
+  iframe_width: 200
+  iframe_height: 120
