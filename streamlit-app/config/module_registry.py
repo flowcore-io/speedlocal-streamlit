@@ -24,18 +24,13 @@ class ModuleRegistry:
     
     def _register_default_modules(self) -> None:
         """Register all default modules."""
-        # Register Key Insights module first 
+
         self.register_module("key_insights", KeyInsightsModule())
-        
-        # Register Energy/Emissions module 
+
         self.register_module("energy_&_emissions", EnergyEmissionsModule())
 
         self.register_module("energy_flow_map", EnergyMapModule())
 
-        # Register Time Profile module 
-        # self.register_module("time_profile", TimeProfileModule())
-
-        # Register Time Profile module 
         self.register_module("subannual_profile", SubAnnualModule())
         
         # Future modules can be added here:
