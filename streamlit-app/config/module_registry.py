@@ -6,13 +6,13 @@ from typing import Dict
 from modules.base_module import BaseModule
 from modules.key_insights.module import KeyInsightsModule
 from modules.energy_emissions.module import EnergyEmissionsModule
-
 from modules.energy_map.module import EnergyMapModule
+from modules.capacity_map.module import CapacityMapModule
 from modules.subannual.module import SubAnnualModule
-
-
-
 from modules.development.module import DevelopmentModule
+
+#from modules.capacity_map.module import CapacityMapModule
+
 
 class ModuleRegistry:
     """Central registry for all app modules."""
@@ -32,11 +32,9 @@ class ModuleRegistry:
         self.register_module("energy_flow_map", EnergyMapModule())
 
         self.register_module("subannual_profile", SubAnnualModule())
-        
-        # Future modules can be added here:
-        
-        # self.register_module("economics", EconomicsModule())
 
+        self.register_module("capacity_map", CapacityMapModule())
+               
         # Register Development module 
         self.register_module("development", DevelopmentModule())
 

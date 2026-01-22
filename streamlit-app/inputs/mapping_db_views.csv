@@ -10,3 +10,4 @@ map_subannual,com,,,,,,,,energy,f_in,EXP*,,!ANNUAL,,,,,,,
 energy_subannual,techgroup,,,EDH,,,,,energy,f_out,,,(?!.*000).*,,,,,,,
 energy_subannual_agg,techgroup,,,EDH,,,,,energy,f_out,,,(?!.*000).*,,,,,,,"techgroup,regfrom,regto"
 elc_price,attr,,,,,,,,prices,mpri,,ELCC,(?!.*000).*,,,,,,,
+capacity_map,prc,,,,,,,,capacity,tcap,,,,,,,,,,

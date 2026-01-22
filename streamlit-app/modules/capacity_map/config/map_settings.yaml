@@ -1,0 +1,83 @@
+# Map Visualization Settings Configuration
+
+# Default map view settings
+default_view:
+  center_lat: 59.5  # Center between Trøndelag, Vara, and Bornholm
+  center_lon: 13.0
+  zoom_start: 5
+  tiles: "OpenStreetMap"  # Options: OpenStreetMap, CartoDB positron, CartoDB dark_matter
+
+# Marker styles for different facility types
+marker_styles:
+  wind_offshore:
+    icon: "wind"
+    color: "blue"
+    prefix: "fa"
+    size_multiplier: 1.0
+    description: "Offshore Wind Turbine"
+  
+  wind_onshore:
+    icon: "wind"
+    color: "green"
+    prefix: "fa"
+    size_multiplier: 1.0
+    description: "Onshore Wind Turbine"
+  
+  solar_pv:
+    icon: "sun"
+    color: "orange"
+    prefix: "fa"
+    size_multiplier: 0.9
+    description: "Solar Photovoltaic"
+  
+  hydro:
+    icon: "tint"
+    color: "darkblue"
+    prefix: "fa"
+    size_multiplier: 1.1
+    description: "Hydropower"
+  
+  biomass:
+    icon: "leaf"
+    color: "darkgreen"
+    prefix: "fa"
+    size_multiplier: 0.9
+    description: "Biomass Plant"
+  
+  default:
+    icon: "circle"
+    color: "gray"
+    prefix: "fa"
+    size_multiplier: 1.0
+    description: "Other Facility"
+
+# Popup configuration
+popup:
+  width: 300
+  max_width: 400
+  show_capacity: true
+  show_year: true
+  show_unit: true
+  show_region: true
+  show_process_name: true
+  show_coordinates: true
+
+# Map layer controls
+layers:
+  show_control: true
+  collapsed: false
+  position: "topright"
+
+# Marker size scaling
+marker_sizing:
+  enabled: false  # Set to true to scale marker size by capacity
+  min_radius: 5
+  max_radius: 20
+  capacity_scale_factor: 0.1
+
+# Color scheme for regions
+region_colors:
+  DKB: "#FF6B6B"  # Bornholm - Red
+  TRL: "#4ECDC4"  # Trøndelag - Teal
+  VGR: "#95E1D3"  # Vara - Light Green
+  default: "#CCCCCC"  # Default - Gray

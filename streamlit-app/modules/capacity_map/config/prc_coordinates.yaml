@@ -1,0 +1,41 @@
+# Process Coordinates Configuration
+# Maps process IDs to geographic coordinates and metadata
+# Format: prc_name: {lat, lon, type, region, display_name}
+
+# Bornholm (Denmark) - Onshore Wind
+# X:866970;Y:6127812
+ELCELE__EWOWINE073DKB:
+  lat: 55.16042
+  lon: 14.763113
+  type: wind_onshore
+  region: DKB
+  display_name: "Eksisterende landvindmølle"
+
+# Bornholm (Denmark) - Onshore Wind
+#X:866630.3;Y:6128181.96)
+ELCELE__EWOWINE074DKB:
+  lat: 55.163979
+  lon: 14.758286
+  type: wind_onshore
+  region: DKB
+  display_name: "Eksisterende landvindmølle"
+
+# Bornholm (Denmark) - Onshore Wind
+ELCELE__EWOWINE075DKB:
+#X:866800.1;Y:6127996.86
+  lat: 55.162199
+  lon: 14.760699
+  type: wind_onshore
+  region: DKB
+  display_name: "Eksisterende landvindmølle"
+
+# Example for future expansion - Polygon-based facilities
+# ELHYD__RESERVOIR_TRL:
+#   type: polygon
+#   region: TRL
+#   display_name: "Trøndelag Hydro Reservoir"
+#   coordinates:
+#     - [63.430, 10.395]
+#     - [63.431, 10.396]
+#     - [63.432, 10.397]
+#     - [63.430, 10.395]
