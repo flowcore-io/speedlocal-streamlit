@@ -4,7 +4,7 @@ map_defaults:
   zoom_start: 8
   center_lat: 55.12
   center_lon: 14.92
-  tiles: "CartoDB positron"
+  tiles: "OpenStreetMap" # Options: OpenStreetMap, CartoDB positron, CartoDB dark_matter
 
 line_styles:
   max_width: 15

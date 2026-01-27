@@ -224,7 +224,7 @@ class EnergyMapModule(BaseModule):
         Args:
             df: Transformed and filtered DataFrame
         """
-        st.header("🗺️ Energy Flow Map")
+        st.header("Energy Flow Map")
 
         desc_mapping = self._get_desc_mapping()
         
