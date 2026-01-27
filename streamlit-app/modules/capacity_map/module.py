@@ -68,7 +68,7 @@ class CapacityMapModule(BaseModule):
             table_dfs: Dictionary of dataframes loaded from mapping_db_views.csv
             filters: Dictionary with filter selections (scenario, etc.)
         """
-        st.title("🗺️ Capacity Map")
+        st.title("Capacity Map")
         st.markdown("""
         Visualize process capacities on an interactive geographic map. 
         Each marker represents a facility with technical capacity (tcap) data.
@@ -77,7 +77,7 @@ class CapacityMapModule(BaseModule):
         # Validate data availability
         if not self.validate_data(table_dfs):
             self.show_error("Capacity map data table not available.")
-            with st.expander("ℹ️ Setup Instructions"):
+            with st.expander("Setup Instructions"):
                 st.markdown("""
                 Add this line to `inputs/mapping_db_views.csv`:
                 ```
@@ -101,11 +101,11 @@ class CapacityMapModule(BaseModule):
             self.show_warning("No data available after applying filters.")
             return
         
-        # Render sidebar filters and get selections
-        filter_selections = self._render_sidebar_filters(df_filtered)
+        # Render page filters and get selections
+        filter_selections = self._render_page_filters(df_filtered)
         
         if filter_selections is None:
-            st.info("👈 Configure filters in the sidebar to display the map")
+            st.info("Configure filters in the sidebar to display the map")
             return
         
         # Apply module-specific filters
@@ -119,7 +119,7 @@ class CapacityMapModule(BaseModule):
         # Check for unmapped processes
         unmapped = self.map_builder.get_unmapped_processes(capacity_data)
         if unmapped:
-            with st.expander(f"⚠️ {len(unmapped)} processes without coordinate mappings", expanded=False):
+            with st.expander(f"{len(unmapped)} processes without coordinate mappings", expanded=False):
                 st.warning(
                     f"The following {len(unmapped)} processes have capacity data but no coordinates defined:\n\n"
                     f"{', '.join(unmapped)}"
@@ -139,9 +139,9 @@ class CapacityMapModule(BaseModule):
         
         return df_filtered
     
-    def _render_sidebar_filters(self, df_raw: pd.DataFrame) -> Optional[dict]:
+    def _render_page_filters(self, df_raw: pd.DataFrame) -> Optional[dict]:
         """
-        Render sidebar filter controls
+        Render page filter controls (not sidebar)
         
         Args:
             df_raw: Raw dataframe from table_dfs
@@ -149,28 +149,50 @@ class CapacityMapModule(BaseModule):
         Returns:
             Dictionary with filter selections or None if invalid
         """
-        st.sidebar.header("🗺️ Capacity Map Filters")
+        st.subheader("Filter Settings")
+        
+        # Get available scenarios
+        available_scenarios = sorted(df_raw['scen'].unique()) if 'scen' in df_raw.columns else []
+        if not available_scenarios:
+            st.error("No scenarios available")
+            return None
         
         # Get available years
         available_years = sorted(df_raw['year'].unique()) if 'year' in df_raw.columns else []
         if not available_years:
-            st.sidebar.error("No years available")
+            st.error("No years available")
             return None
         
-        # Year selection
-        selected_year = st.sidebar.selectbox(
-            "Year",
-            options=available_years,
-            index=len(available_years) - 1 if available_years else 0,
-            key="capacity_map_year"
-        )
+        # Create filter controls in columns
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            selected_scenario = st.selectbox(
+                "Scenario",
+                options=available_scenarios,
+                key="capacity_map_scenario"
+            )
+        
+        with col2:
+            selected_year = st.selectbox(
+                "Year",
+                options=available_years,
+                index= 0,
+                key="capacity_map_year"
+            )
+        
+        # Filter data by scenario and year for subsequent filters
+        df_filtered = df_raw[
+            (df_raw['scen'] == selected_scenario) &
+            (df_raw['year'] == selected_year)
+        ]
         
         # Get processes that have coordinates defined
-        all_processes = df_raw['prc'].unique() if 'prc' in df_raw.columns else []
+        all_processes = df_filtered['prc'].unique() if 'prc' in df_filtered.columns else []
         mapped_processes = [p for p in all_processes if p in self.prc_coords]
         
         if not mapped_processes:
-            st.sidebar.warning("No processes with coordinate mappings found")
+            st.warning("No processes with coordinate mappings found")
             return None
         
         # Get facility types from mapped processes
@@ -179,13 +201,14 @@ class CapacityMapModule(BaseModule):
             for p in mapped_processes
         ))
         
-        # Facility type filter
-        selected_types = st.sidebar.multiselect(
-            "Facility Types",
-            options=sorted(available_types),
-            default=sorted(available_types),
-            key="capacity_map_types"
-        )
+        with col3:
+            # Facility type filter
+            selected_types = st.multiselect(
+                "Facility Types",
+                options=sorted(available_types),
+                default=sorted(available_types),
+                key="capacity_map_types"
+            )
         
         # Filter processes by selected types
         filtered_processes = [
@@ -199,8 +222,8 @@ class CapacityMapModule(BaseModule):
             for p in filtered_processes
         ))
         
-        # Region filter
-        selected_regions = st.sidebar.multiselect(
+        # Region filter (full width below)
+        selected_regions = st.multiselect(
             "Regions",
             options=sorted(available_regions),
             default=sorted(available_regions),
@@ -214,12 +237,15 @@ class CapacityMapModule(BaseModule):
         ]
         
         if not final_processes:
-            st.sidebar.warning("No processes match the selected filters")
+            st.warning("No processes match the selected filters")
             return None
         
-        st.sidebar.info(f"📍 {len(final_processes)} facilities will be displayed")
+        st.info(f"🔍 {len(final_processes)} facilities will be displayed")
+        
+        st.divider()
         
         return {
+            'scenario': selected_scenario,
             'year': selected_year,
             'processes': final_processes,
             'regions': selected_regions,
@@ -239,6 +265,10 @@ class CapacityMapModule(BaseModule):
         """
         df = df_raw.copy()
         
+        # Filter by scenario
+        if 'scen' in df.columns and 'scenario' in filter_selections:
+            df = df[df['scen'] == filter_selections['scenario']]
+
         # Filter by year
         if 'year' in df.columns:
             df = df[df['year'] == filter_selections['year']]
@@ -290,7 +320,7 @@ class CapacityMapModule(BaseModule):
             capacity_data: Filtered capacity dataframe
             filter_selections: Dictionary with filter selections
         """
-        st.subheader("📊 Summary")
+        st.subheader("Summary")
         
         # Total capacity
         total_capacity = capacity_data['value'].sum()
@@ -336,7 +366,7 @@ class CapacityMapModule(BaseModule):
         
         csv = capacity_data.to_csv(index=False)
         st.download_button(
-            label="📥 Download Data",
+            label="Download Data",
             data=csv,
             file_name=f"capacity_map_{scenario}_{filter_selections['year']}.csv",
             mime="text/csv"

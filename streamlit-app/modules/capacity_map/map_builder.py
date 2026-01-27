@@ -127,7 +127,7 @@ class MapBuilder:
         # Add layer control if configured
         if self.map_settings.get('layers', {}).get('show_control', True):
             folium.LayerControl(
-                collapsed=self.map_settings.get('layers', {}).get('collapsed', False),
+                collapsed=self.map_settings.get('layers', {}).get('collapsed', True),
                 position=self.map_settings.get('layers', {}).get('position', 'topright')
             ).add_to(map_obj)
         

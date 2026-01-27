@@ -64,7 +64,7 @@ popup:
 
 # Map layer controls
 layers:
-  show_control: true
+  show_control: false
   collapsed: false
   position: "topright"
 
@@ -76,8 +76,8 @@ marker_sizing:
   capacity_scale_factor: 0.1
 
 # Color scheme for regions
-region_colors:
-  DKB: "#FF6B6B"  # Bornholm - Red
-  TRL: "#4ECDC4"  # Trøndelag - Teal
-  VGR: "#95E1D3"  # Vara - Light Green
-  default: "#CCCCCC"  # Default - Gray
+# region_colors:
+#   DKB: "#FF6B6B"  # Bornholm - Red
+#   TRL: "#4ECDC4"  # Trøndelag - Teal
+#   VGR: "#95E1D3"  # Vara - Light Green
+#   default: "#CCCCCC"  # Default - Gray
