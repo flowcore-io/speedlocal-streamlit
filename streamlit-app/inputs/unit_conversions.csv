@@ -12,6 +12,8 @@ Mio. Euro,MKr25,MEuro25,0.134228188,currency
 Mio. DKK,MEuro25,MKr25,7.45,currency
 Mio. Euro,MEuro25,MEuro25,1,currency
 Mio. DKK,MKr25,MKr25,1,currency
+MW,MW,MW,1,power
+MW,GW,MW,1000,power
 terajoules,TJ,TJ,1,energy
 gigajoules,TJ,GJ,1000,energy
 terajoules,GJ,TJ,0.001,energy
