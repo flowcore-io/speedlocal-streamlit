@@ -6,6 +6,7 @@ import streamlit as st
 from streamlit_folium import st_folium
 import yaml
 import pandas as pd
+import geopandas as gpd
 from pathlib import Path
 from typing import Optional, Dict, List, Any
 
@@ -27,7 +28,7 @@ class CapacityMapModule(BaseModule):
         
         # Load configurations
         self.config_path = Path(__file__).parent / "config"
-        self.prc_coords = self._load_yaml_config("prc_coordinates.yaml")
+        self.prc_coords = {}
         self.map_settings = self._load_yaml_config("map_settings.yaml")
         
         # Initialize map builder
@@ -56,6 +57,195 @@ class CapacityMapModule(BaseModule):
             st.error(f"Error loading {filename}: {e}")
             return {}
     
+    def _load_prc_coordinates_from_csv(self, table_dfs: Dict[str, pd.DataFrame]) -> dict:
+        """
+        Load process coordinates from CSV and enrich with database metadata.
+        Supports both points (X, Y) and polygons (WKT).
+        
+        Returns:
+            Dictionary mapping PRC -> {lat, lon, type, region, display_name, geometry_type, geometry}
+        """
+        csv_path = self.config_path / "prc_coordinates.csv"
+        
+        if not csv_path.exists():
+            st.error(f"Coordinate CSV not found: {csv_path}")
+            return {}
+        
+        try:
+            # Load CSV with semicolon separator and comma as decimal
+            df = pd.read_csv(csv_path, sep=';', decimal=',')
+            
+            # Validate required columns
+            required_cols = ['PRC', 'X', 'Y', 'WKT', 'EPSG']
+            if not all(col in df.columns for col in required_cols):
+                st.error(f"CSV missing required columns: {required_cols}")
+                return {}
+            
+            # Initialize dictionary
+            prc_coords_dict = {}
+            unmapped_count = 0
+            
+            # Group by EPSG for batch processing
+            for epsg, group in df.groupby('EPSG'):
+                # Separate points and polygons
+                # Check if WKT contains actual geometry keywords (not just "0")
+                has_wkt = (
+                    group['WKT'].notna() & 
+                    (group['WKT'].astype(str).str.contains('POLYGON|POINT|LINESTRING', case=False, na=False))
+                )
+                has_xy = (group['X'] != 0) | (group['Y'] != 0)
+
+                # Process WKT geometries (polygons/multipolygons)
+                wkt_group = group[has_wkt].copy()
+                if not wkt_group.empty:
+                    try:
+                        # Clean WKT strings: remove "0 " prefix if present (e.g., "0 MULTIPOLYGON" -> "MULTIPOLYGON")
+                        wkt_group['WKT_CLEAN'] = (
+                            wkt_group['WKT']
+                            .astype(str)
+                            .str.strip()
+                            .str.replace(r'^0\s+', '', regex=True)  # Remove "0 " at start
+                        )
+                        
+                        gdf_wkt = gpd.GeoDataFrame(
+                            wkt_group,
+                            geometry=gpd.GeoSeries.from_wkt(wkt_group['WKT_CLEAN']),
+                            crs=f"EPSG:{epsg}"
+                        )
+                        
+                        # Convert to lat/lon if needed
+                        if gdf_wkt.crs.to_epsg() != 4326:
+                            gdf_wkt = gdf_wkt.to_crs(epsg=4326)
+                        
+                        # Get centroid for display location
+                        gdf_wkt['centroid'] = gdf_wkt.geometry.centroid
+                        gdf_wkt['lat'] = gdf_wkt['centroid'].y
+                        gdf_wkt['lon'] = gdf_wkt['centroid'].x
+                        
+                        # Store WKT geometries
+                        for _, row in gdf_wkt.iterrows():
+                            prc_coords_dict[row['PRC']] = {
+                                'lat': row['lat'],
+                                'lon': row['lon'],
+                                'geometry_type': 'polygon',
+                                'geometry': row['geometry'],  # Store full geometry
+                                'epsg': epsg
+                            }
+                    except Exception as e:
+                        st.warning(f"Error processing WKT for EPSG {epsg}: {e}")
+                
+                # Process point geometries (X, Y)
+                point_group = group[~has_wkt & has_xy].copy()
+                if not point_group.empty:
+                    gdf_points = gpd.GeoDataFrame(
+                        point_group,
+                        geometry=gpd.points_from_xy(point_group['X'], point_group['Y']),
+                        crs=f"EPSG:{epsg}"
+                    )
+                    
+                    # Convert to lat/lon if needed
+                    if gdf_points.crs.to_epsg() != 4326:
+                        gdf_points = gdf_points.to_crs(epsg=4326)
+                    
+                    gdf_points['lat'] = gdf_points.geometry.y
+                    gdf_points['lon'] = gdf_points.geometry.x
+                    
+                    # Store point geometries
+                    for _, row in gdf_points.iterrows():
+                        prc_coords_dict[row['PRC']] = {
+                            'lat': row['lat'],
+                            'lon': row['lon'],
+                            'x': row['X'],
+                            'y': row['Y'],
+                            'geometry_type': 'point',
+                            'geometry': row['geometry'],
+                            'epsg': epsg
+                        }
+                
+                # Count unmapped (no WKT and X=0, Y=0)
+                unmapped_count += len(group[~has_wkt & ~has_xy])
+            
+            # Enrich with metadata from database
+            prc_coords_dict = self._enrich_with_database_metadata(prc_coords_dict, table_dfs)
+            
+            # Show info
+            if unmapped_count > 0:
+                st.sidebar.info(f"ℹ️ {unmapped_count} processes skipped (no coordinates)")
+            
+            point_count = sum(1 for v in prc_coords_dict.values() if v.get('geometry_type') == 'point')
+            polygon_count = sum(1 for v in prc_coords_dict.values() if v.get('geometry_type') == 'polygon')
+            
+            st.sidebar.success(f"✓ Loaded {point_count} points, {polygon_count} polygons")
+            
+            return prc_coords_dict
+            
+        except Exception as e:
+            st.error(f"Error loading coordinates from CSV: {e}")
+            import traceback
+            st.error(traceback.format_exc())
+            return {}
+    
+    def _enrich_with_database_metadata(
+            self, 
+            prc_coords_dict: dict,
+            table_dfs: Dict[str, pd.DataFrame]
+        ) -> dict:
+        """
+        Enrich coordinate dictionary with metadata from database.
+        
+        Args:
+            prc_coords_dict: Dictionary with PRC -> {lat, lon, ...}
+            
+        Returns:
+            Enhanced dictionary with type, region, display_name added
+        """
+        
+        if 'capacity_map' not in table_dfs:
+            st.warning("capacity_map table not available for metadata enrichment")
+            for prc in prc_coords_dict:
+                prc_coords_dict[prc].update({
+                    'type': 'default',
+                    'region': 'Unknown',
+                    'display_name': prc
+                })
+            return prc_coords_dict
+        
+        df = table_dfs['capacity_map']
+        
+        # Create lookup for each PRC
+        for prc in list(prc_coords_dict.keys()):
+            prc_data = df[df['prc'] == prc]
+            
+            if not prc_data.empty:
+                row = prc_data.iloc[0]
+                
+                # Extract metadata
+                techgroup = row.get('techgroup', 'default')
+                regfrom = row.get('regfrom', 'Unknown')
+                
+                # Get display name from label
+                if 'label' in row and pd.notna(row['label']):
+                    label_text = str(row['label'])
+                    words = label_text.split()
+                    display_name = ' '.join(words[:2]) if len(words) >= 2 else label_text
+                else:
+                    display_name = prc
+                
+                # Update dictionary
+                prc_coords_dict[prc].update({
+                    'type': techgroup if pd.notna(techgroup) else 'default',
+                    'region': regfrom if pd.notna(regfrom) else 'Unknown',
+                    'display_name': display_name
+                })
+            else:
+                prc_coords_dict[prc].update({
+                    'type': 'default',
+                    'region': 'Unknown',
+                    'display_name': prc
+                })
+        
+        return prc_coords_dict
+    
     def render(
         self,
         table_dfs: Dict[str, pd.DataFrame],
@@ -68,6 +258,9 @@ class CapacityMapModule(BaseModule):
             table_dfs: Dictionary of dataframes loaded from mapping_db_views.csv
             filters: Dictionary with filter selections (scenario, etc.)
         """
+        self.prc_coords = self._load_prc_coordinates_from_csv(table_dfs)
+        self.map_builder.prc_coordinates = self.prc_coords 
+
         st.title("Capacity Map")
         st.markdown("""
         Visualize process capacities on an interactive geographic map. 
@@ -324,13 +517,11 @@ class CapacityMapModule(BaseModule):
         
         # Total capacity
         total_capacity = capacity_data['value'].sum()
-        avg_capacity = capacity_data['value'].mean()
         num_facilities = len(capacity_data)
         
         # Display metrics
         st.metric("Total Capacity", f"{total_capacity:.2f} MW")
         st.metric("Facilities", num_facilities)
-        st.metric("Avg Capacity", f"{avg_capacity:.2f} MW")
         
         st.divider()
         
@@ -346,15 +537,25 @@ class CapacityMapModule(BaseModule):
         if type_summary:
             type_df = pd.DataFrame(type_summary)
             type_grouped = type_df.groupby('Type')['Capacity (MW)'].sum().sort_values(ascending=False)
+            
+            # Get description mapping
+            desc_mapping = self._get_desc_mapping()
+            
             for ftype, cap in type_grouped.items():
-                st.text(f"{ftype.replace('_', ' ').title()}: {cap:.2f} MW")
+                # Use description if available, otherwise use formatted type name
+                if desc_mapping and 'techgroup' in desc_mapping:
+                    display_name = desc_mapping['techgroup'].get(ftype, ftype.replace('_', ' ').title())
+                else:
+                    display_name = ftype.replace('_', ' ').title()
+                
+                st.text(f"{display_name}: {cap:.2f} MW")            
         
         st.divider()
         
         # Capacity by region
         st.markdown("**By Region:**")
-        if 'reg' in capacity_data.columns:
-            region_summary = capacity_data.groupby('reg')['value'].sum().sort_values(ascending=False)
+        if 'regfrom' in capacity_data.columns:
+            region_summary = capacity_data.groupby('regfrom')['value'].sum().sort_values(ascending=False)
             for region, cap in region_summary.items():
                 st.text(f"{region}: {cap:.2f} MW")
         

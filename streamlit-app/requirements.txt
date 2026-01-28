@@ -18,6 +18,7 @@ requests>=2.31.0
 # Geocoding (for map features)
 geopy>=2.4.0
 pyproj>=3.4.0
+geopandas>=0.14.0  # For coordinate transformation and polygon support
 
 # Optional but recommended
 openpyxl>=3.1.0  # For Excel file support

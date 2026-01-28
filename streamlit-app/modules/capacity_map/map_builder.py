@@ -119,7 +119,23 @@ class MapBuilder:
             
             # Add marker to appropriate feature group
             marker.add_to(feature_groups[facility_type])
-        
+            
+            # If this is a polygon, also add the polygon shape to the map
+            if coord_info.get('geometry_type') == 'polygon' and 'geometry' in coord_info:
+                # Convert geometry to GeoJSON for Folium
+                polygon_geojson = coord_info['geometry'].__geo_interface__
+                
+                folium.GeoJson(
+                    polygon_geojson,
+                    style_function=lambda x: {
+                        'fillColor': style.get('color', 'gray'),
+                        'color': style.get('color', 'gray'),
+                        'weight': 2,
+                        'fillOpacity': 0.3
+                    },
+                    tooltip=f"{display_name} (area)"
+                ).add_to(feature_groups[facility_type])
+                
         # Add all feature groups to map
         for group in feature_groups.values():
             group.add_to(map_obj)

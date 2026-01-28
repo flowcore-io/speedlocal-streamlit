@@ -14,42 +14,36 @@ marker_styles:
     color: "blue"
     prefix: "fa"
     size_multiplier: 1.0
-    description: "Offshore Wind Turbine"
   
-  wind_onshore:
+  WOWIN:
     icon: "wind"
-    color: "green"
+    color: "pink"
     prefix: "fa"
     size_multiplier: 1.0
-    description: "Onshore Wind Turbine"
   
   solar_pv:
     icon: "sun"
     color: "orange"
     prefix: "fa"
     size_multiplier: 0.9
-    description: "Solar Photovoltaic"
   
   hydro:
     icon: "tint"
     color: "darkblue"
     prefix: "fa"
     size_multiplier: 1.1
-    description: "Hydropower"
   
   biomass:
     icon: "leaf"
     color: "darkgreen"
     prefix: "fa"
     size_multiplier: 0.9
-    description: "Biomass Plant"
   
   default:
     icon: "circle"
     color: "gray"
     prefix: "fa"
     size_multiplier: 1.0
-    description: "Other Facility"
 
 # Popup configuration
 popup:
