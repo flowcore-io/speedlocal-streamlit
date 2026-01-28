@@ -124,11 +124,20 @@ class CapacityMapModule(BaseModule):
                         
                         # Store WKT geometries
                         for _, row in gdf_wkt.iterrows():
+                            # Detect geometry type from the actual geometry
+                            geom = row['geometry']
+                            if geom.geom_type in ['Polygon', 'MultiPolygon']:
+                                geom_type = 'polygon'
+                            elif geom.geom_type in ['Point', 'MultiPoint']:
+                                geom_type = 'point'
+                            else:
+                                geom_type = 'other'  # LineString, etc.
+                            
                             prc_coords_dict[row['PRC']] = {
                                 'lat': row['lat'],
                                 'lon': row['lon'],
-                                'geometry_type': 'polygon',
-                                'geometry': row['geometry'],  # Store full geometry
+                                'geometry_type': geom_type,  # ← Now correctly detected
+                                'geometry': geom,
                                 'epsg': epsg
                             }
                     except Exception as e:
