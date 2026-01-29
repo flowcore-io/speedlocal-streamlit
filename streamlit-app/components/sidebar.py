@@ -76,15 +76,12 @@ def render_sidebar() -> dict:
             st.session_state.selected_duckdb_path = ""
         
         # File picker button
-        col1, col2 = st.sidebar.columns([3, 1])
-        with col1:
-            st.write("Choose a DuckDB file:")
-        with col2:
-            if st.button("📂 Browse", type="secondary", use_container_width=True):
-                selected = open_file_picker()
-                if selected:
-                    st.session_state.selected_duckdb_path = selected
-                    st.rerun()
+        st.sidebar.write("Choose a DuckDB file:")
+        if st.sidebar.button("📂 Browse", type="secondary", use_container_width=True):
+            selected = open_file_picker()
+            if selected:
+                st.session_state.selected_duckdb_path = selected
+                st.rerun()
         
         # Display selected file
         if st.session_state.selected_duckdb_path:
