@@ -31,9 +31,9 @@ class ModuleRegistry:
 
         self.register_module("energy_flow_map", EnergyMapModule())
 
-        self.register_module("subannual_profile", SubAnnualModule())
-
         self.register_module("capacity_map", CapacityMapModule())
+
+        self.register_module("subannual_profile", SubAnnualModule())
                
         # Register Development module 
         self.register_module("development", DevelopmentModule())

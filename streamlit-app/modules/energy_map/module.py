@@ -8,14 +8,14 @@ import streamlit.components.v1 as components
 from typing import Dict, Any
 from pathlib import Path
 import sys
+from utils.map_system.base_map import BaseMapRenderer
+from utils.map_system.layers import FlowLayer
+from modules.base_module import BaseModule
 
 # Add project root to path
 project_root = Path(__file__).parent.parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
-
-from modules.base_module import BaseModule
-from modules.energy_map.map_renderer import FlowMapRenderer
 
 
 class EnergyMapModule(BaseModule):
@@ -29,10 +29,42 @@ class EnergyMapModule(BaseModule):
             enabled=True
         )
         
-        # Initialize map renderer
-        config_dir = Path(__file__).parent / "config"
-        self.map_renderer = FlowMapRenderer(config_dir)
+        # Paths
+        self.config_path = Path(__file__).parent / "config"
+        base_config_path = Path(__file__).parent.parent.parent / "utils" / "map_system" / "config.yaml"
+        module_config_path = self.config_path / "map_settings.yaml"
+        
+        # Load config with override
+        self.map_config = BaseMapRenderer.load_config_with_override(
+            base_config_path=base_config_path,
+            module_config_path=module_config_path
+        )
+        
+        # Load region coordinates (for geocoding overrides)
+        self.region_coords = self._load_region_coordinates(self.config_path)
     
+    def _load_region_coordinates(self, config_dir: Path) -> Dict[str, tuple]:
+        coords_path = config_dir / "region_coordinates.csv"
+        
+        # Use base loader with standard CSV format
+        coords_dict = BaseMapRenderer.load_coordinates_from_csv(
+            csv_path=coords_path,
+            key_column='REGION',
+            sep=';',          # semi-colon separator
+            decimal=',',      # comma decimal
+            show_stats=True
+        )
+        
+        if not coords_dict:
+            return {}
+        
+        # Convert to tuple format for FlowLayer
+        region_coords = {}
+        for region, data in coords_dict.items():
+            region_coords[region] = (data['lat'], data['lon'])
+        
+        return region_coords
+
     def get_required_tables(self) -> list:
         return ["map"]
     
@@ -180,7 +212,7 @@ class EnergyMapModule(BaseModule):
         ].copy()
         
         if not imp.empty:
-            imp['start'] = imp['regfrom'].replace('IMPEXP', 'Global Market')
+            imp['start'] = imp['regfrom'].replace('IMPEXP', 'SWEDEN')
             imp['end'] = imp['regto'].apply(
                 lambda x: x.split('_', 1)[1] if '_' in str(x) else x
             )
@@ -196,7 +228,7 @@ class EnergyMapModule(BaseModule):
             exp['start'] = exp['regfrom'].apply(
                 lambda x: x.split('_', 1)[1] if '_' in str(x) else x
             )
-            exp['end'] = exp['regto'].replace('IMPEXP', 'Global Market')
+            exp['end'] = exp['regto'].replace('IMPEXP', 'SWEDEN')
             dfs_to_concat.append(exp)
         
         if not dfs_to_concat:
@@ -289,9 +321,37 @@ class EnergyMapModule(BaseModule):
         
         with st.spinner("Generating map..."):
             try:
-                folium_map = self.map_renderer.create_flow_map(df_map)
-                map_html = folium_map._repr_html_()
+                # Create map renderer
+                map_renderer = BaseMapRenderer(self.map_config)
+                
+                # Create flow layer
+                flow_layer = FlowLayer(
+                    name="Energy Flows",
+                    config=self.map_config.get('flow_layer', {}),
+                    flow_data=df_map,
+                    region_coords=self.region_coords
+                )
+                
+                # Add layer and render
+                map_renderer.add_layer(flow_layer)
+                base_map = map_renderer.create_base_map()
+                final_map = map_renderer.render(base_map)
+                
+                # Display map
+                map_html = final_map._repr_html_()
                 components.html(map_html, height=800, scrolling=True)
+                
+                # Display geocoding messages AFTER the map
+                if flow_layer.geocoding_messages:
+                    with st.expander("ℹ️ Geocoding Information", expanded=False):
+                        for msg in flow_layer.geocoding_messages:
+                            if msg.startswith("🌍"):
+                                st.info(msg)
+                            elif msg.startswith("⚠️"):
+                                st.warning(msg)
+                            elif msg.startswith("❌"):
+                                st.error(msg)
+
             except Exception as e:
                 self.show_error(f"Error creating map: {str(e)}")
                 st.exception(e)
