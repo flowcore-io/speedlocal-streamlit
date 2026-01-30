@@ -6,9 +6,8 @@ import streamlit as st
 from streamlit_folium import st_folium
 
 import pandas as pd
-import geopandas as gpd
 from pathlib import Path
-from typing import Optional, Dict, List, Any
+from typing import Optional, Dict, Any
 
 from modules.base_module import BaseVisualizationModule
 from utils.map_system.base_map import BaseMapRenderer
@@ -53,25 +52,20 @@ class CapacityMapModule(BaseVisualizationModule):
         }
 
     
-    def _load_prc_coordinates_from_csv(self, table_dfs: Dict[str, pd.DataFrame]) -> dict:
+    def _load_prc_coordinates_from_csv(self) -> Dict[str, Dict]:
+        """Load process coordinates from CSV (coordinates only, no metadata)."""
         csv_path = self.config_path / "prc_coordinates.csv"
         
-        # Use base loader with Danish CSV format
+        # Use base loader with European CSV format
         prc_coords = BaseMapRenderer.load_coordinates_from_csv(
             csv_path=csv_path,
             key_column='PRC',
-            sep=';',          # Semicolon separator
-            decimal='.',      # dot decimal
+            sep=';',
+            decimal=',',
             show_stats=True
         )
         
-        if not prc_coords:
-            return {}
-        
-        # Enrich with database metadata (method unchanged)
-        prc_coords = self._enrich_with_database_metadata(prc_coords, table_dfs)
-        
-        return prc_coords
+        return prc_coords if prc_coords else {}
             
 
     def _enrich_with_database_metadata(
@@ -139,12 +133,6 @@ class CapacityMapModule(BaseVisualizationModule):
         Load and prepare capacity data.
         
         This runs BEFORE filtering and unit conversion.
-        
-        Args:
-            table_dfs: All available tables
-            
-        Returns:
-            Raw capacity DataFrame with descriptions applied
         """
         # Get capacity data
         df = table_dfs.get("capacity_map", pd.DataFrame())
@@ -161,85 +149,16 @@ class CapacityMapModule(BaseVisualizationModule):
                 desc_mapping
             )
         
-        # Load coordinates (needed for filtering and rendering later)
+        # Load coordinates and enrich with metadata
         if not hasattr(self, 'prc_coords'):
-            self.prc_coords = self._load_prc_coordinates_from_csv(table_dfs)
+            # Load raw coordinates
+            prc_coords = self._load_prc_coordinates_from_csv()
+            
+            # Enrich with database metadata
+            self.prc_coords = self._enrich_with_database_metadata(prc_coords, table_dfs)
         
         return df
-    # def render(
-    #     self,
-    #     table_dfs: Dict[str, pd.DataFrame],
-    #     filters: Dict[str, Any]
-    # ) -> None:
-    #     """
-    #     Main render method - entry point for the module
-        
-    #     Args:
-    #         table_dfs: Dictionary of dataframes loaded from mapping_db_views.csv
-    #         filters: Dictionary with filter selections (scenario, etc.)
-    #     """
-    #     self.prc_coords = self._load_prc_coordinates_from_csv(table_dfs)
-    #     # self.map_builder.prc_coordinates = self.prc_coords 
-
-    #     st.title("Capacity Map")
-    #     st.markdown("""
-    #     Visualize process capacities on an interactive geographic map. 
-    #     Each marker represents a facility with technical capacity (tcap) data.
-    #     """)
-        
-    #     # Validate data availability
-    #     if not self.validate_data(table_dfs):
-    #         self.show_error("Capacity map data table not available.")
-    #         with st.expander("Setup Instructions"):
-    #             st.markdown("""
-    #             Add this line to `inputs/mapping_db_views.csv`:
-    #             ```
-    #             capacity_map,prc,,,,,,,,capacity,tcap,,,,,,,,,,
-    #             ```
-    #             Then restart the application.
-    #             """)
-    #         return
-        
-    #     # Get raw data from table_dfs
-    #     df_raw = table_dfs.get("capacity_map")
-        
-    #     if df_raw is None or df_raw.empty:
-    #         self.show_warning("No capacity data available.")
-    #         return
-        
-    #     # Apply global filters (scenario)
-    #     df_filtered = self._apply_filters(df_raw, filters)
-        
-    #     if df_filtered.empty:
-    #         self.show_warning("No data available after applying filters.")
-    #         return
-        
-    #     # Render page filters and get selections
-    #     filter_selections = self._render_page_filters(df_filtered)
-        
-    #     if filter_selections is None:
-    #         st.info("Configure filters in the sidebar to display the map")
-    #         return
-        
-    #     # Apply module-specific filters
-    #     capacity_data = self._apply_module_filters(df_filtered, filter_selections)
-        
-    #     # Check for data after filtering
-    #     if capacity_data.empty:
-    #         self.show_warning("No capacity data matches the selected filters.")
-    #         return
-        
-    #     # Check for unmapped processes
-    #     # unmapped = self.map_builder.get_unmapped_processes(capacity_data)
-    #     # if unmapped:
-    #     #     with st.expander(f"{len(unmapped)} processes without coordinate mappings", expanded=False):
-    #     #         st.warning(
-    #     #             f"The following {len(unmapped)} processes have capacity data but no coordinates defined:\n\n"
-    #     #             f"{', '.join(unmapped)}"
-    #     #         )
-        
-    #     # Display map and summary
-    #     self._render_map_and_summary(capacity_data, filter_selections)
+    
     def _render_visualization(self, df: pd.DataFrame, filters: Dict[str, Any]) -> None:
         """
         Render the capacity map visualization.
@@ -297,7 +216,7 @@ class CapacityMapModule(BaseVisualizationModule):
 
         with col1:
             # Scenario filter - USE df_raw here
-            available_scenarios = sorted(df_raw['scen'].unique())  # ✅ Changed to df_raw
+            available_scenarios = sorted(df_raw['scen'].unique()) 
             selected_scenario = st.selectbox(
                 "Scenario",
                 options=available_scenarios,
@@ -307,7 +226,7 @@ class CapacityMapModule(BaseVisualizationModule):
         
         with col2:
             # Year filter - USE df_raw here
-            available_years = sorted(df_raw['year'].unique())  # ✅ Changed to df_raw
+            available_years = sorted(df_raw['year'].unique())
             selected_year = st.selectbox(
                 "Year",
                 options=available_years,
@@ -315,7 +234,7 @@ class CapacityMapModule(BaseVisualizationModule):
                 key="capacity_map_year"
             )
         
-        # NOW create df_filtered after getting the selections
+        # Create df_filtered after getting the selections
         df_filtered = df_raw[
             (df_raw['scen'] == selected_scenario) &
             (df_raw['year'] == selected_year)
@@ -469,9 +388,7 @@ class CapacityMapModule(BaseVisualizationModule):
         # Display metrics
         st.metric("Total Capacity", f"{total_capacity:.2f} {unit_label}")  # ← Use dynamic unit
         st.metric("Facilities", num_facilities)
-        
-        # ... rest stays the same, also update other hardcoded "MW" references ...
-        
+                
         st.divider()
         
         # Capacity by facility type

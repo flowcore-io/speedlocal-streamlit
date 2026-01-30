@@ -41,24 +41,25 @@ class EnergyMapModule(BaseModule):
         )
         
         # Load region coordinates (for geocoding overrides)
-        self.region_coords = self._load_region_coordinates(self.config_path)
+        self.region_coords = self._load_region_coordinates()
     
-    def _load_region_coordinates(self, config_dir: Path) -> Dict[str, tuple]:
-        coords_path = config_dir / "region_coordinates.csv"
+    def _load_region_coordinates(self) -> Dict[str, tuple]:
+        """Load region coordinates from CSV."""
+        csv_path = self.config_path / "region_coordinates.csv"
         
-        # Use base loader with standard CSV format
+        # Use base loader with European CSV format
         coords_dict = BaseMapRenderer.load_coordinates_from_csv(
-            csv_path=coords_path,
+            csv_path=csv_path,
             key_column='REGION',
-            sep=';',          # semi-colon separator
-            decimal=',',      # comma decimal
+            sep=';',
+            decimal=',',
             show_stats=True
         )
         
         if not coords_dict:
             return {}
         
-        # Convert to tuple format for FlowLayer
+        # Convert to tuple format for FlowLayer compatibility
         region_coords = {}
         for region, data in coords_dict.items():
             region_coords[region] = (data['lat'], data['lon'])

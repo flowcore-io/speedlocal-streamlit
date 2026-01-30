@@ -28,7 +28,7 @@ capacity_layer:
       prefix: "fa"
       description: "Onshore Wind Turbine"
     
-    PVSOL:
+    SOLPV:
       icon: "sun"
       color: "orange"
       prefix: "fa"
