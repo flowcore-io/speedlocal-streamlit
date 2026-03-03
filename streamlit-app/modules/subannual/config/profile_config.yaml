@@ -1,5 +1,9 @@
 # Time Profile Module Configuration
 
+timeslice_groups:
+  weeks: W
+  hours: H
+
 plot_groups:
   production:
     plot_type: bar

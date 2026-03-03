@@ -10,7 +10,6 @@ class TimesReportPlotter:
     Generic plotting class using pre-loaded DataFrames.
     
     New unified interface via create_figure() method with configuration-driven plotting.
-    Legacy methods (stacked_bar, line_plot, stacked_timeseries) maintained for compatibility.
     """
 
     def __init__(
@@ -338,7 +337,9 @@ class TimesReportPlotter:
                             mode='lines+markers',
                             line=dict(color=color_map.get(grp)),
                             marker=dict(size=6),
-                            yaxis=y_axis
+                            yaxis=y_axis,
+                            legendgroup=grp
+                            #showlegend=(scen == scenarios[0]) if scenario_col else True
                         ))
     
     def _add_grouped_bar_traces(
@@ -422,7 +423,8 @@ class TimesReportPlotter:
                 y=df[y_col],
                 mode='lines+markers',
                 line=line_config,
-                yaxis=y_axis
+                yaxis=y_axis,
+                showlegend=True
             ))
     
     def _configure_layout(

@@ -1,0 +1,94 @@
+# Default Map Configuration
+
+# Default map view settings
+default_view:
+  center_lat: 59.5
+  center_lon: 13.0
+  zoom_start: 5
+  tiles: "OpenStreetMap"  # Options: OpenStreetMap, CartoDB positron, CartoDB dark_matter
+
+# Layer control configuration
+layers:
+  show_control: true
+  collapsed: true
+  position: "topright"
+
+# Capacity layer configuration
+capacity_layer:
+  marker_styles:
+    wind_offshore:
+      icon: "wind"
+      color: "blue"
+      prefix: "fa"
+      description: "Offshore Wind Turbine"
+    
+    WOWIN:
+      icon: "wind"
+      color: "green"
+      prefix: "fa"
+      description: "Onshore Wind Turbine"
+    
+    SOLPV:
+      icon: "sun"
+      color: "orange"
+      prefix: "fa"
+      description: "Solar Photovoltaic"
+    
+    hydro:
+      icon: "tint"
+      color: "darkblue"
+      prefix: "fa"
+      description: "Hydropower"
+    
+    biomass:
+      icon: "leaf"
+      color: "darkgreen"
+      prefix: "fa"
+      description: "Biomass Plant"
+    
+    default:
+      icon: "circle"
+      color: "gray"
+      prefix: "fa"
+      description: "Other Facility"
+  
+  popup:
+    max_width: 400
+    show_capacity: true
+    show_year: true
+    show_unit: true
+    show_region: true
+    show_process_name: true
+    show_coordinates: false
+  
+  polygon_style:
+    weight: 2
+    fillOpacity: 0.3
+
+# Flow layer configuration
+flow_layer:
+  line_styles:
+    max_width: 15
+    min_width: 2
+    pulse_color: "#0000FF"
+    base_color: "#b2b2b2"
+    delay: 1000
+    dash_array: [1, 90]
+  
+  marker_styles:
+    width: 10
+    height: 10
+    fill: "black"
+    opacity: 0.5
+  
+  region_labels:
+    enabled: true           
+    font_size: "12px"       
+    font_weight: "bold"     
+    color: "#333"           
+    offset_y: -25           
+  
+  popup:
+    font_size: "14px"
+    line_height: 1.6
+    width: 150

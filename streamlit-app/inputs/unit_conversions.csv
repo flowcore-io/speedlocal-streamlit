@@ -1,9 +1,9 @@
 unit_long,from_unit,to_unit,factor,category
-kiloton,t,kt,0.001,mass
+kiloton,t,kt,1,mass
 ton,t,t,1,mass
 kiloton,kt,t,1000,mass
 kiloton,kt,kt,1,mass
-megaton,kt,mt,0.001,mass
+megaton,kt,mt,1,mass
 kiloton,mt,kt,1000,mass
 megaton,mt,mt,1,mass
 ton,mt,t,1000000,mass
@@ -12,9 +12,13 @@ Mio. Euro,MKr25,MEuro25,0.134228188,currency
 Mio. DKK,MEuro25,MKr25,7.45,currency
 Mio. Euro,MEuro25,MEuro25,1,currency
 Mio. DKK,MKr25,MKr25,1,currency
+Megawatt,MW,MW,1,power
+Megawatt,GW,MW,1000,power
+Gigawatt,MW,GW,0.001,power
+Gigawatt,GW,GW,1,power
 terajoules,TJ,TJ,1,energy
 gigajoules,TJ,GJ,1000,energy
-terajoules,GJ,TJ,0.001,energy
+terajoules,GJ,TJ,1,energy
 gigajoules,GJ,GJ,1,energy
 kilometer,km,km,1,length
 thousand hectares,KHA,KHA,1,area

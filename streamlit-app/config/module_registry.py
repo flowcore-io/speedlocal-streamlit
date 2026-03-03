@@ -6,13 +6,13 @@ from typing import Dict
 from modules.base_module import BaseModule
 from modules.key_insights.module import KeyInsightsModule
 from modules.energy_emissions.module import EnergyEmissionsModule
-
 from modules.energy_map.module import EnergyMapModule
+from modules.capacity_map.module import CapacityMapModule
 from modules.subannual.module import SubAnnualModule
-
-
-
 from modules.development.module import DevelopmentModule
+
+#from modules.capacity_map.module import CapacityMapModule
+
 
 class ModuleRegistry:
     """Central registry for all app modules."""
@@ -24,24 +24,17 @@ class ModuleRegistry:
     
     def _register_default_modules(self) -> None:
         """Register all default modules."""
-        # Register Key Insights module first 
+
         self.register_module("key_insights", KeyInsightsModule())
-        
-        # Register Energy/Emissions module 
+
         self.register_module("energy_&_emissions", EnergyEmissionsModule())
 
         self.register_module("energy_flow_map", EnergyMapModule())
 
-        # Register Time Profile module 
-        # self.register_module("time_profile", TimeProfileModule())
+        self.register_module("capacity_map", CapacityMapModule())
 
-        # Register Time Profile module 
         self.register_module("subannual_profile", SubAnnualModule())
-        
-        # Future modules can be added here:
-        
-        # self.register_module("economics", EconomicsModule())
-
+               
         # Register Development module 
         self.register_module("development", DevelopmentModule())
 

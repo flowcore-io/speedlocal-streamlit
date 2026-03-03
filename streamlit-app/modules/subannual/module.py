@@ -70,75 +70,71 @@ class SubAnnualModule(BaseVisualizationModule):
         
         df_combined = pd.concat(dfs, ignore_index=True) if dfs else pd.DataFrame()
         
-        # Labels are already mapped to descriptions by DataLoaderManager
         return df_combined
     
-    def _get_available_weeks(self) -> List[str]:
-        """
-        Get list of available weeks from timeslice metadata.
+    def _get_available_timeslice_groups(self) -> Dict[str, List[str]]:
+        config = self._load_profile_config()
+        parts_map = config.get('timeslice_groups', {})
         
-        Returns:
-            List of week codes (e.g., ['W03', 'W09', 'W16', 'W42'])
-        """
-        # Get timeslice metadata from session
         ts_metadata = st.session_state.get('ts_metadata', pd.DataFrame())
         
         if ts_metadata.empty or 'all_ts' not in ts_metadata.columns:
-            # Fallback to hardcoded list if metadata not available
-            return ['W03', 'W09', 'W16', 'W42']
-        
-        # Extract unique week prefixes (first 3 characters)
-        weeks = ts_metadata['all_ts'].str[:3].unique()
-        
-        # Filter to only week codes (start with 'W')
-        weeks = [w for w in weeks if str(w).startswith('W')]
-        
-        # Sort naturally (W03, W09, W16, W42)
-        weeks = sorted(weeks, key=lambda x: int(x[1:]) if len(x) > 1 and x[1:].isdigit() else 0)
-        
-        return weeks
+            return {key: [] for key in parts_map}
+
+        series = ts_metadata['all_ts'].dropna().astype(str)
+        results = {}
+
+        for key, prefix in parts_map.items():
+            # extract() grabs the digits, then we prepend the prefix back
+            extracted = series.str.extract(rf'{prefix}(\d+)', expand=False).dropna().unique()
+            
+            # Sort by converting to int, then return the formatted string
+            # We use a list comprehension to put the prefix back on
+            sorted_values = sorted(extracted, key=int)
+            results[key] = [f"{prefix}{v}" for v in sorted_values]
+
+        return results
 
     def _render_visualization(self, df: pd.DataFrame, filters: Dict) -> None:
-        """Render interface."""
+        """Render interface with dynamic timeslice groups."""
         st.header("Subannual Profile")
+
+        # Global Filter Controls (Row 1)
+        g_col1, g_col2, g_col3 = st.columns(3)
         
-        # Filter controls
-        col1, col2, col3, col4 = st.columns(4)
-        
-        with col1:
+        with g_col1:
             scenarios = sorted(df['scen'].unique())
             selected_scenario = st.selectbox("Scenario", scenarios, key="tp_scenario")
         
-        with col2:
+        with g_col2:
             years = sorted(df['year'].unique())
             selected_year = st.selectbox("Year", years, index=len(years)-1, key="tp_year")
         
-        with col3:
+        with g_col3:
             regions = sorted(df['regfrom'].unique()) if 'regfrom' in df.columns else []
             if not regions:
                 self.show_warning("No regions found in data")
                 return
-            
-            selected_region = st.selectbox(
-                "Region", 
-                regions, 
-                index=0,
-                key="tp_region"
-            )
-        
-        with col4:
-            # Get available weeks from metadata (dynamically loaded)
-            available_weeks = self._get_available_weeks()
-            
-            selected_weeks = st.multiselect(
-                "TimeSlice",
-                options=available_weeks,
-                default=[],
-                key="tp_weeks",
-                help="Select specific weeks to display (leave empty to show all weeks)"
-            )
+            selected_region = st.selectbox("Region", regions, index=0, key="tp_region")
 
-        # Filter data by scenario/year/region
+        # Dynamic Timeslice Controls (Row 2)
+        st.markdown("---")
+        ts_groups = self._get_available_timeslice_groups()
+        ts_cols = st.columns(len(ts_groups))
+        
+        # Store selections in a dict to use for filtering
+        selections = {}
+        
+        for i, (group_label, options) in enumerate(ts_groups.items()):
+            with ts_cols[i]:
+                selections[group_label] = st.multiselect(
+                    label=group_label.capitalize(),
+                    options=options,
+                    default=[],
+                    key=f"tp_{group_label}"
+                )
+
+        # 3. Apply Global Filters
         df_plot = df[
             (df['scen'] == selected_scenario) &
             (df['year'] == selected_year) &
@@ -148,17 +144,20 @@ class SubAnnualModule(BaseVisualizationModule):
         if df_plot.empty:
             self.show_warning("No data for selected filters.")
             return
-        
-        # Filter to selected weeks (ONLY if weeks are selected)
-        if selected_weeks:  
-            week_pattern = '|'.join([f'^{w}' for w in selected_weeks])
-            df_plot = df_plot[df_plot['all_ts'].str.match(week_pattern)]
-            
-            if df_plot.empty:
-                self.show_warning("No data for selected week(s).")
-                return
-        
-        # Transform to wide format
+
+        # Apply Generic Timeslice Filtering
+        # This logic filters the dataframe for every group where a selection was made
+        for group_label, selected_values in selections.items():
+            if selected_values:
+                # Matches any of the selected codes (e.g., 'S001|S002') within the string
+                pattern = '|'.join(selected_values)
+                df_plot = df_plot[df_plot['all_ts'].str.contains(pattern, na=False)]
+                
+                if df_plot.empty:
+                    self.show_warning(f"No data for selected {group_label}.")
+                    return
+
+        # Transform and Render
         df_wide = self._transform_to_wide(df_plot)
         
         if df_wide.empty:
@@ -166,13 +165,13 @@ class SubAnnualModule(BaseVisualizationModule):
             return
         
         # Debug info
-        with st.expander("🔍 Debug Info", expanded=False):
-            st.write("**DataFrame shape:**", df_wide.shape)
-            st.write("**Columns:**", df_wide.columns.tolist())
+        # with st.expander("🔍 Debug Info", expanded=False):
+        #     st.write("**DataFrame shape:**", df_wide.shape)
+        #     st.write("**Columns:**", df_wide.columns.tolist())
             
-            data_cols = [col for col in df_wide.columns if col not in ['all_ts', 'scen', 'year']]
-            st.write("**Data columns:**", data_cols)
-            st.write("**Number of series:**", len(data_cols))
+        #     data_cols = [col for col in df_wide.columns if col not in ['all_ts', 'scen', 'year']]
+        #     st.write("**Data columns:**", data_cols)
+        #     st.write("**Number of series:**", len(data_cols))
 
         # Get all data columns (technology names)
         data_cols = [col for col in df_wide.columns if col not in ['all_ts', 'scen', 'year']]

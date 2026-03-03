@@ -1,0 +1,33 @@
+# Map display specific overrides
+# Only include values you want to override from base config
+
+# Popup configuration
+popup:
+  width: 300
+  max_width: 400
+  show_capacity: true
+  show_year: true
+  show_unit: true
+  show_region: true
+  show_process_name: true
+  show_coordinates: true
+
+# Map layer controls
+# layers:
+#   show_control: false
+#   collapsed: false
+#   position: "topright"
+
+# Marker size scaling
+# marker_sizing:
+#   enabled: false  # Set to true to scale marker size by capacity
+#   min_radius: 5
+#   max_radius: 20
+#   capacity_scale_factor: 0.1
+
+# Color scheme for regions
+# region_colors:
+#   DKB: "#FF6B6B"  # Bornholm - Red
+#   TRL: "#4ECDC4"  # Trøndelag - Teal
+#   VGR: "#95E1D3"  # Vara - Light Green
+#   default: "#CCCCCC"  # Default - Gray

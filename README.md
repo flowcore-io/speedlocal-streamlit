@@ -1,278 +1,214 @@
-# Speed Local Streamlit Analytics
+# TIMES Data Explorer - User Guide
 
-🚀 **A comprehensive multi-page Streamlit application for analyzing TIMES energy system data with advanced visualization capabilities including geospatial mapping, Sankey diagrams, and interactive database tools.**
+An interactive web application for exploring and visualizing TIMES energy model results stored in DuckDB databases.
 
-This repository contains a sophisticated analytics dashboard for visualizing and analyzing energy system data from the Speed Local project, which focuses on Nordic green transition research through trans-Nordic collaboration.
+---
 
-## 🌟 Features
+## 🚀 Quick Launch
 
-### 📊 TIMES Data Explorer
-- **Interactive scenario analysis** with sector-based energy and emissions visualization
-- **Dynamic filtering** by scenario, year, and sector
-- **Comparative analysis** between different energy scenarios
-- **Stacked bar charts** for energy inputs by sector
-- **Line charts** for emissions trends over time
+Assuming you are in `streamlit-app/`
 
-### 🌍 Energy Flow Maps  
-- **Interactive geospatial visualization** of energy flows between regions
-- **Folium-based maps** with zoom, pan, and interactive features
-- **Automated geocoding** for region coordinates
-- **Flow magnitude visualization** with proportional line thickness
-- **Color-coded flows**: Blue (exports), Red (imports), Green (bidirectional)
-- **Animated pathways** showing energy flow directions
+### Option 1: One-Click Launch
 
-### 📊 Sankey Diagrams
-- **Comprehensive energy flow analysis** with Plotly Sankey charts
-- **Multi-type flow visualization**: Production, Consumption, Transmission, Import/Export
-- **Node categorization** with color-coding for technologies, demands, and regions
-- **Interactive filtering** with flow threshold controls
-- **Statistical analysis** with flow breakdowns and top flows ranking
-
-### 🛠️ Database Tools
-- **Schema Explorer**: Browse database structure with table and column information
-- **SQL Query Interface**: Execute custom queries with safety controls and templates
-- **Automated Data Analysis**: Quick metrics and statistical summaries
-- **Quick Chart Generator**: Build custom visualizations from SQL results
-- **Data Export**: Download query results and analysis data
-
-## 📁 Repository Structure
-
+**First Time Setup:**
+```batch
+# Double-click this file:
+launch_app.bat
 ```
-speedlocal-streamlit/
-├── streamlit-app/                        # Streamlit application code
-│   ├── app/
-│   │   ├── main.py                       # Main dashboard and landing page
-│   │   ├── pages/
-│   │   │   ├── 1_📊_TIMES_Data_Explorer.py   # Advanced TIMES data analysis
-│   │   │   ├── 2_🌍_Energy_Flow_Maps.py      # Geospatial energy flow visualization  
-│   │   │   ├── 3_📊_Sankey_Diagrams.py       # Energy flow Sankey charts
-│   │   │   └── 4_🛠️_Database_Tools.py        # Database management utilities
-│   │   └── utils/
-│   │       ├── database.py               # Database connection and utilities
-│   │       └── geo_settings.py           # Geographic constants and settings
-│   ├── assets/                           # Static assets
-│   ├── tests/                            # Application tests
-│   ├── requirements.txt                  # Python dependencies
-│   └── Dockerfile                        # Container image definition
-├── helm-chart/                           # Kubernetes deployment manifests
-│   ├── values.yaml                       # Base Helm values
-│   └── configuration/                    # Environment-specific configs (ArgoCD compatible)
-│       └── production.yaml
-└── README.md                             # This file
+This will automatically:
+- ✅ Create a virtual environment
+- ✅ Install all dependencies
+- ✅ Launch the app in your browser
+
+**Subsequent Launches:**
+```batch
+# Use the faster simple launcher:
+launch_app_simple.bat
 ```
 
-## 🎯 Project Overview
+### Option 2: Manual Launch (For Python Users)
 
-The Speed Local project provides a platform where scientists can:
-- Upload GAMS reports and scientific datasets
-- Process data into reusable flat structures
-- Create shareable DuckDB files by combining datasets
-- Collaborate on Nordic green transition research
-
-This multi-page Streamlit application provides comprehensive visualization and analysis capabilities for TIMES energy system data, including:
-- **Advanced data exploration** with interactive filtering and comparative analysis
-- **Geospatial visualization** of energy flows between regions
-- **Sankey diagrams** for comprehensive energy flow analysis
-- **Database management tools** for direct data access and custom queries
-
-## 🚀 Quick Start
-
-### Local Development
-
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/flowcore-io/speedlocal-streamlit.git
-   cd speedlocal-streamlit
-   ```
-
-2. **Set up Python environment**:
-   ```bash
-   cd streamlit-app
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   pip install -r requirements.txt
-   ```
-
-3. **Run the application**:
-   ```bash
-   streamlit run app/main.py
-   ```
-
-4. **Open in browser**:
-   Navigate to `http://localhost:8501`
-
-### Docker Development
-
-1. **Build the Docker image**:
-   ```bash
-   cd streamlit-app
-   docker build -t speedlocal-streamlit .
-   ```
-
-2. **Run the container**:
-   ```bash
-   docker run -p 8501:8501 speedlocal-streamlit
-   ```
-
-## 🚢 Deployment
-
-This application is designed to deploy on Flowcore's Kubernetes infrastructure using the `flowcore-microservices` Helm chart.
-
-### Building and Pushing to ECR
-
+**Setup (first time only):**
 ```bash
-# Set your AWS configuration
-AWS_ACCOUNT_ID=305363105399
-AWS_REGION=eu-west-1
-ECR_REGISTRY=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
-IMAGE_REPO=speedlocal/streamlit-app
-IMAGE_TAG=v1.0.0
-
-# Login to ECR
-aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}
-
-# Create repository if it doesn't exist
-aws ecr describe-repositories --repository-names ${IMAGE_REPO} || aws ecr create-repository --repository-name ${IMAGE_REPO}
-
-# Build and push
-cd streamlit-app
-docker build -t ${ECR_REGISTRY}/${IMAGE_REPO}:${IMAGE_TAG} .
-docker push ${ECR_REGISTRY}/${IMAGE_REPO}:${IMAGE_TAG}
+# Install dependencies
+pip install -r requirements.txt
 ```
 
-### Kubernetes Deployment
+**Launch:**
+```bash
+# Run Streamlit
+streamlit run main.py
+```
 
-The Helm configuration in `helm-chart/` is designed to be used with the `public-customer-sites-manifests` repository for ArgoCD deployment:
+The app will automatically open in your browser at `http://localhost:8501`
 
-1. Copy the Helm values to the appropriate environment configuration
-2. Update the image tag and hostname as needed
-3. Commit and push to trigger ArgoCD deployment
+---
 
-### Environment URLs
+#### 📋 Prerequisites
 
-- **Development**: `https://speedlocal-streamlit-dev.flowcore.app`
-- **Production**: `https://speedlocal-streamlit.flowcore.app`
+- Python 3.8 or higher
+- Internet connection (for connecting to database from Azure URL)
+- Modern web browser (Chrome, Firefox, Edge, Safari)
 
-## 🛠 Technical Details
+---
 
-### Features
+## ⚙️ Configuration
 
-- **Multi-page Application**: Four specialized analysis pages for different use cases
-- **Advanced Data Visualization**: Interactive charts, maps, and Sankey diagrams
-- **Database Management**: Complete database exploration and query capabilities
-- **Geospatial Analysis**: Interactive maps with energy flow visualization
-- **Export Capabilities**: Download data and visualizations for further analysis
-- **Responsive Design**: Works on desktop and mobile devices
-- **Real-time Analysis**: Dynamic filtering and comparative scenario analysis
+### Required Input Files
 
-### Technology Stack
+Check these files in the `inputs/` folder:
 
-- **Frontend**: Streamlit 1.32+
-- **Data Processing**: Pandas, NumPy
-- **Visualization**: Plotly, Folium for interactive charts and maps
-- **Database**: DuckDB for efficient analytical queries
-- **Geospatial**: GeoPy for geocoding and coordinate management
-- **Container**: Python 3.11 slim Docker image
-- **Deployment**: Kubernetes with NGINX Ingress
-- **Infrastructure**: Flowcore Kubernetes platform
+| File | Purpose |
+|------|---------|
+| `mapping_db_views.csv` | Defines how database tables are queried and labeled |
+| `unit_conversions.csv` | Defines unit conversion rules (e.g., kt → t, PJ → GJ) |
 
-## 💾 Database Connection
+### Configuration Files
 
-The application supports two database connection methods:
 
-### Local DuckDB Files
-- Place your `.duckdb` file in an accessible location
-- Use the "Local File" connection option
-- Enter the full path to your database file
+| File | Purpose |
+|------|---------|
+| `config/default_units.yaml` | Default target units for each category (mass, energy, currency) |
+| `config/module_registry.py` | Where the existing modules are registered and set to active or inactive |
+| `modules/subannual/config/profile_config.yaml` | Subannual module visualization settings |
+| `modules/energy_map/config/map_settings.yaml` | Map module display settings (zoom, colors, line styles) |
+| `modules/energy_map/config/region_coordinates.yaml` | Geographic coordinates for regional mapping |
 
-### Azure Blob Storage
-- Generate a SAS URL for your DuckDB file in Azure Storage
-- Use the "Azure URL" connection option
-- Enable local caching for improved performance
-- URLs are automatically validated for expiry
+---
 
-## 📋 Data Requirements
+### Database Connection
 
-The application expects a DuckDB database with a `timesreport_facts` table containing:
+Configure in the **sidebar** when you launch the app:
 
-### Required Columns:
-- `scen`: Scenario identifier
-- `year`: Year of the data point
-- `reg`: Region identifier  
-- `prc`: Process/technology identifier
-- `com`: Commodity/fuel type
-- `attr`: Attribute type (f_in, f_out, etc.)
-- `topic`: Data topic (energy, emissions, etc.)
-- `value`: Numerical value
-- `regfrom`, `regto`: For transmission flows
+1. **Connection Type:**
+   - **Azure URL** (default): Connect to cloud-hosted database
+   - **Local File**: Use a database file on your computer
 
-### Data Types Supported:
-- **Energy flows**: Production, consumption, imports, exports, transmission
-- **Emissions data**: By sector and technology
-- **Regional data**: Multi-region energy systems
-- **Temporal data**: Multi-year scenario analysis
+2. **Database Source:**
+   - Azure URL: `https://speedlocal.flowcore.app/api/duckdb/share/...`
+   - Local path: `inputs/your_database.duckdb`
 
-## 🎛️ Usage Guide
+3. **Mapping CSV Path:**
+   - Default: `inputs/mapping_db_views.csv`
 
-### 1. Connect to Database
-- Use the sidebar connection panel on any page
-- Select connection type (Local File or Azure URL)
-- Test connection to verify data access
+---
 
-### 2. TIMES Data Explorer
-- Select scenario, year, and sector filters
-- Generate energy input visualizations by sector
-- Compare emissions trends across scenarios
-- Export data for further analysis
+## 📊 Modules Overview
 
-### 3. Energy Flow Maps  
-- Configure scenario, year, and fuel filters
-- Generate interactive maps showing regional energy flows
-- Explore flow statistics and regional connections
-- Use geographic markers and flow animations
+### 1. Key Insights
+**Purpose:** Executive dashboard with high-level project information
 
-### 4. Sankey Diagrams
-- Set scenario, year, and optional region filters
-- Adjust flow threshold to focus on major pathways
-- Analyze flow types and energy transformation chains
-- Export flow summaries and detailed data
+---
 
-### 5. Database Tools
-- **Schema Explorer**: Navigate database structure
-- **SQL Query**: Execute custom analysis queries
-- **Data Analysis**: Get automated insights
-- **Quick Charts**: Build custom visualizations
+### 2. Energy & Emissions
+**Purpose:** Annual energy and emissions reporting
 
-### Health Checks
+**Features:**
+- **Energy Input Analysis:**
+  - Aggregate view across all sectors
+  - Disaggregated view per sector
+  - Stacked bar charts by fuel type (comgroup)
+  
+- **Emissions Analysis:**
+  - Aggregate emissions by sector
+  - Disaggregated emissions by commodity
+  - Line charts showing trends
 
-Streamlit automatically exposes a health check endpoint at `/_stcore/health` which is used by Kubernetes probes.
+---
 
-## 🔗 Integration
+### 3. Energy Flow Map
+**Purpose:** Visualize regional energy flows on interactive maps
 
-This dashboard integrates with:
-- **Speed Local Admin** (`speedlocal.flowcore.app`) - Main data management platform
-- **Flowcore Platform** - Event-driven data processing
-- **Azure Blob Storage** - File storage and retrieval
-- **DuckDB Files** - Public dataset access
+**Features:**
+- Interactive Folium maps
+- Bidirectional flow visualization
+- Animated flow paths (AntPath)
+- Regional markers with NUTS coding
+- Flow aggregation by fuel type
 
-## 🌱 About Speed Local
+---
 
-Speed Local is part of the broader initiative to accelerate Nordic green transition through trans-Nordic collaboration. The project enables scientists to:
+### 4. Subannual Profile
+**Purpose:** analysis with subannual temporal resolution
 
-- Share high-quality scientific datasets
-- Collaborate on research across Nordic countries
-- Provide transparent access to green transition data
-- Support evidence-based policy making
+**Features:**
+- Stacked bar charts by specified group (techgroup, prc, com, comgroup, etc)
+- timeslice group selector (ex. filter by weeks)
+- Production visualization (price, consumption, and storage coming soon)
 
-## 📄 License
+---
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+### 5. 🔧 Development
+**Purpose:** Debugging and testing tools for developers, Troubleshoot data issues and explore database structure
 
-## 🤝 Contributing
+**Features:**
+- Filter debugging information
+- Description table viewer
+- Data inspector with column analysis
+- Profile mapping generator (for configuration)
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+---
 
-## 📞 Support
+## 🔄 Unit Conversion
 
-For support and questions, please contact the Flowcore team.
-Speed Local Streamlit dashboard for scientific data visualization and analysis
+The app supports automatic unit conversion for multiple categories:
+
+| Category | Example Units | Default |
+|----------|---------------|---------|
+| **Energy** | PJ, GJ, TJ, MWh | GJ |
+| **Mass** | kt, t, Mt | t |
+| **Currency** | MKr25, Kr25 | MKr25 |
+| **Length** | km, m | km |
+| **Area** | KHA, ha | KHA |
+| **Volume** | MM3, m³ | MM3 |
+
+**Note:** Rows with unknown or unconvertible units are filtered out. Check the exclusion summary to see what was removed.
+
+---
+
+## 🐛 Troubleshooting
+
+### App won't start
+**Problem:** "streamlit is not recognized as a command"
+**Solution:** 
+- Delete the `venv` folder
+- Run `launch_app.bat` again
+- Or manually: `pip install -r requirements.txt`
+
+### No data appears
+**Problem:** Database connection failed or tables are empty
+**Solution:**
+- Check the Azure URL hasn't expired
+- Verify `mapping_db_views.csv` exists in `inputs/`
+- Click "🔄 Reload Data" in the sidebar
+
+### Unit conversion issues
+**Problem:** All data disappears after enabling unit conversion
+**Solution:**
+- Check if your data has the correct `unit` and `cur` columns
+- Review the exclusion summary to see what was filtered out
+- Verify `unit_conversions.csv` has the necessary conversion rules
+
+### Map not displaying
+**Problem:** Map is blank or regions not found
+**Solution:**
+- Check `region_coordinates.yaml` has coordinates for your regions, maybe some regions are not automatically read and have to be hardcoded
+- Verify the needed table exists in your database
+
+---
+
+## 📚 Additional Resources
+
+- **Architecture Diagrams:** See `documentation/architecture_simple.png` and `architecture_full.png`
+- **Developer Documentation:** See `README_DEVELOPER.md`
+- **TIMES Model Documentation:** [IEA-ETSAP](https://iea-etsap.org/index.php/etsap-tools/model-generators/times)
+- **TIMES Report Documentation:** [TIMESreport Documentation](https://github.com/Energy-Modelling-Lab/DemoS_012_timesreport/blob/master/README.md)
+---
+
+## 🎯 Quick Tips
+
+- Always check unit conversion exclusions to understand what data is being filtered
+
+- The Development module is useful for understanding data structure of queried tables through `mapping_db_views.csv`
+
+- Azure URLs expire - download the database locally if you need offline access
