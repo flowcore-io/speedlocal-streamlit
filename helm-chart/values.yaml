@@ -71,7 +71,7 @@ flowcore-microservices:
           nginx.org/proxy-connect-timeout: "60s"
           nginx.org/client-max-body-size: "50m"
           nginx.org/websocket-services: "times-app"
-          nginx.org/sticky-cookie-services: "times-app route expires=1h path=/"
+          nginx.org/sticky-cookie-services: "serviceName=times-app route expires=1h path=/"
         route:
           - hosts:
               - speedlocal-times.customer.flowcore.io
